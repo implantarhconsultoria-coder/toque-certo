@@ -1,0 +1,17 @@
+export const colors = {
+  bg: '#0A0612',
+  bgDeep: '#060410',
+  bgCard: '#140B24',
+  bgElevated: '#1D1133',
+  text: '#F8F5FF',
+  textSecondary: '#9C8FBE',
+  accentPurple: '#8B3CFF',
+  accentBlue: '#3C6CFF',
+  accentLime: '#C6FF3C',
+  accentCyan: '#3CF0FF',
+  danger: '#FF3C6E',
+  success: '#3CFFA8',
+  gradient: ['#3C6CFF', '#8B3CFF'] as const,
+  border: 'rgba(180,150,255,0.16)',
+  borderStrong: 'rgba(198,255,60,0.4)',
+};
