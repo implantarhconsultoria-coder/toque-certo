@@ -44,6 +44,17 @@ export async function signInWithProvider(provider: Provider): Promise<void> {
   const oauthError = parsed.searchParams.get('error_description') || parsed.searchParams.get('error');
   if (oauthError) throw new Error(oauthError);
   if (!code) throw new Error('O provedor não retornou o código de autenticação.');
+  await exchangeAuthCode(code);
+}
+
+const consumedCodes = new Set<string>();
+export async function exchangeAuthCode(code: string): Promise<void> {
+  if (!supabase) throw new Error('Autenticação ainda não configurada.');
+  if (consumedCodes.has(code)) return;
+  consumedCodes.add(code);
   const exchange = await supabase.auth.exchangeCodeForSession(code);
-  if (exchange.error) throw exchange.error;
+  if (exchange.error) {
+    consumedCodes.delete(code);
+    throw exchange.error;
+  }
 }

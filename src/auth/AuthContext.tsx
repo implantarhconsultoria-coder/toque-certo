@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Linking, Platform } from 'react-native';
 import type { User } from '@supabase/supabase-js';
-import { supabase, authConfigured } from './supabase';
+import { supabase, authConfigured, exchangeAuthCode } from './supabase';
 
 type ContextValue = {
   user: User | null;
@@ -36,8 +36,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (Platform.OS === 'web' || !uri.startsWith('toquecerto://auth/callback')) return;
       const match = uri.match(/[?&]code=([^&#]+)/);
       if (!match) return;
-      const exchange = await supabase!.auth.exchangeCodeForSession(decodeURIComponent(match[1]));
-      if (exchange.error) console.warn('Não foi possível concluir o login:', exchange.error.message);
+      try { await exchangeAuthCode(decodeURIComponent(match[1])); }
+      catch (error) { console.warn('Não foi possível concluir o login:', error instanceof Error ? error.message : error); }
     }
     const deepLink = Linking.addEventListener('url', ({ url }) => { void acceptCallback(url); });
     void Linking.getInitialURL().then(url => { if (url) void acceptCallback(url); });
