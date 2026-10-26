@@ -19,7 +19,11 @@ const achievements = [
 
 export default function StartScreen({ navigation }: Props) {
   const [best, setBest] = useState(0);
-  const { user, configured } = useAuth();
+  const { user, configured, recoveryMode } = useAuth();
+
+  useEffect(() => {
+    if (recoveryMode) navigation.navigate('Auth');
+  }, [recoveryMode, navigation]);
   const [panel, setPanel] = useState<Panel>(null);
   const [effects, setEffects] = useState(true);
 
