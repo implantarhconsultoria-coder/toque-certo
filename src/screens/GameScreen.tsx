@@ -115,7 +115,7 @@ export default function GameScreen({ navigation }: Props) {
         <View style={styles.progressRail}>
           <LinearGradient colors={[colors.accentCyan, colors.accentBlue, colors.accentPink]}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-            style={[styles.progressValue, { width: (timeLeft / 30 * 100) + '%' }]} />
+            style={[styles.progressValue, { width: ((timeLeft / 30 * 100) + '%') as '100%' }]} />
         </View>
 
         <View style={styles.stats}>
