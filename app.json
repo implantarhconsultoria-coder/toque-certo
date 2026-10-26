@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Toque Certo",
+    "slug": "toque-certo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0A0612",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.implanta.toquecerto"
+    },
+    "android": {
+      "package": "com.implanta.toquecerto"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
