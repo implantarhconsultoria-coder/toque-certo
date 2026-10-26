@@ -1,4 +1,5 @@
 import React from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { Stack } from './src/navigation/types';
@@ -9,6 +10,7 @@ import { colors } from './src/theme/colors';
 
 export default function App() {
   return (
+    <SafeAreaProvider>
     <NavigationContainer>
       <StatusBar style="light" />
       <Stack.Navigator
@@ -24,5 +26,6 @@ export default function App() {
         <Stack.Screen name="GameOver" component={GameOverScreen} />
       </Stack.Navigator>
     </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
