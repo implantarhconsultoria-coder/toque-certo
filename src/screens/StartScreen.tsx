@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
+import { useAuth } from '../auth/AuthContext';
 import { ArcadeBackdrop, GlassStat, NeonButton } from '../components/ArcadeUI';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Start'>;
@@ -18,6 +19,11 @@ const achievements = [
 
 export default function StartScreen({ navigation }: Props) {
   const [best, setBest] = useState(0);
+  const { user, configured, recoveryMode } = useAuth();
+
+  useEffect(() => {
+    if (recoveryMode) navigation.navigate('Auth');
+  }, [recoveryMode, navigation]);
   const [panel, setPanel] = useState<Panel>(null);
   const [effects, setEffects] = useState(true);
 
@@ -59,7 +65,7 @@ export default function StartScreen({ navigation }: Props) {
             <Text style={styles.headerBrand}>TOQUE CERTO</Text>
             <View style={styles.levelTrack}><LinearGradient colors={[colors.accentCyan, colors.accentPink]} style={[styles.levelProgress, { width: best >= 25 ? '100%' : best >= 10 ? '60%' : '25%' }]} /></View>
           </View>
-          <TouchableOpacity onPress={() => setPanel('profile')} accessibilityLabel="Abrir perfil" style={styles.headerIcon}>
+          <TouchableOpacity onPress={() => navigation.navigate(user ? 'Profile' : 'Auth')} accessibilityLabel="Abrir perfil ou entrar" style={styles.headerIcon}>
             <Text style={styles.headerGlyph}>◉</Text>
           </TouchableOpacity>
         </View>
@@ -76,6 +82,9 @@ export default function StartScreen({ navigation }: Props) {
 
         <View style={styles.actions}>
           <NeonButton label="▶  JOGAR" onPress={() => navigation.navigate('Game')} />
+          <TouchableOpacity onPress={() => navigation.navigate(user ? 'Profile' : 'Auth')} accessibilityRole="button" style={{ alignItems: 'center', paddingVertical: 9 }}>
+            <Text style={{ color: colors.accentCyan, fontSize: 11, letterSpacing: 1, fontWeight: '900' }}>{user ? '◉  MEU PERFIL' : configured ? '◉  ENTRAR / CRIAR CONTA' : '◉  CONTA ONLINE EM PREPARAÇÃO'}</Text>
+          </TouchableOpacity>
           <View style={styles.secondaryActions}>
             <NeonButton label="✦  MISSÕES" kind="secondary" onPress={() => setPanel('missions')} />
             <NeonButton label="⚙  AJUSTES" kind="secondary" onPress={() => setPanel('settings')} />
