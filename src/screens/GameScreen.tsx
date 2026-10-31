@@ -1,30 +1,31 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, useWindowDimensions, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
-import { generateRound, Round } from '../utils/gameLogic';
+import { createSeededRandom, generateRound, resolveTap, ROUND_DURATION_MS, Round } from '../utils/gameLogic';
 import { ArcadeBackdrop, GlassStat, NeonButton } from '../components/ArcadeUI';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Game'>;
-const TOTAL_TIME = 30000;
 const symbols = ['#49E5FF', '#F66EFF', '#CDFF5F', '#FFB759', '#74A5FF', '#FF71A4'];
 
 export default function GameScreen({ navigation }: Props) {
   const { width } = useWindowDimensions();
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
-  const [bestCombo, setBestCombo] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
-  const [round, setRound] = useState<Round>(() => generateRound(0));
+  const randomRef = useRef(createSeededRandom((Math.random() * 0x100000000) >>> 0));
+  const [round, setRound] = useState<Round>(() => generateRound(0, randomRef.current));
   const [flash, setFlash] = useState<'bonus' | 'wrong' | null>(null);
   const [paused, setPaused] = useState(false);
   const [effects, setEffects] = useState(true);
 
-  const deadline = useRef(Date.now() + TOTAL_TIME);
+  const deadline = useRef(Date.now() + ROUND_DURATION_MS);
+  const remainingMs = useRef(ROUND_DURATION_MS);
+  const pausedRef = useRef(false);
   const scoreRef = useRef(0);
   const bestComboRef = useRef(0);
   const finishedRef = useRef(false);
@@ -36,12 +37,19 @@ export default function GameScreen({ navigation }: Props) {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      if (paused) return;
+      if (pausedRef.current || finishedRef.current) return;
       const next = Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000));
       setTimeLeft(current => current === next ? current : next);
     }, 150);
     return () => clearInterval(timer);
-  }, [paused]);
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', state => {
+      if (state !== 'active') freeze();
+    });
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     if (timeLeft !== 0 || finishedRef.current || paused) return;
@@ -69,30 +77,42 @@ export default function GameScreen({ navigation }: Props) {
   }, [flash]);
 
   function onTap(symbol: string, index: number) {
-    if (paused || timeLeft <= 0 || finishedRef.current || tapLock.current) return;
+    if (pausedRef.current || timeLeft <= 0 || finishedRef.current || tapLock.current) return;
+    if (Date.now() >= deadline.current) {
+      setTimeLeft(0);
+      return;
+    }
     tapLock.current = true;
     setTimeout(() => { tapLock.current = false; }, 80);
-    if (index === round.targetIndex && symbol === round.target) {
-      const nextCombo = combo + 1;
-      const bonus = nextCombo % 5 === 0 ? 1 : 0;
-      const nextScore = scoreRef.current + 1 + bonus;
-      scoreRef.current = nextScore;
-      bestComboRef.current = Math.max(bestComboRef.current, nextCombo);
-      setScore(nextScore);
-      setCombo(nextCombo);
-      setBestCombo(bestComboRef.current);
-      if (bonus && effects) setFlash('bonus');
-      setRound(generateRound(nextScore));
+    const outcome = resolveTap(round, index, symbol, scoreRef.current, combo, bestComboRef.current);
+    if (outcome.correct) {
+      scoreRef.current = outcome.score;
+      bestComboRef.current = outcome.bestCombo;
+      setScore(outcome.score);
+      setCombo(outcome.combo);
+      if (outcome.bonus && effects) setFlash('bonus');
+      setRound(generateRound(outcome.score, randomRef.current));
     } else {
       setCombo(0);
-      deadline.current -= 1000;
+      deadline.current -= outcome.timePenaltyMs;
       setTimeLeft(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
       if (effects) setFlash('wrong');
     }
   }
 
+  function freeze() {
+    if (pausedRef.current || finishedRef.current) return;
+    remainingMs.current = Math.max(0, deadline.current - Date.now());
+    pausedRef.current = true;
+    setTimeLeft(Math.ceil(remainingMs.current / 1000));
+    setPaused(true);
+  }
+
   function resume() {
-    deadline.current = Date.now() + timeLeft * 1000;
+    if (!pausedRef.current) return;
+    deadline.current = Date.now() + remainingMs.current;
+    pausedRef.current = false;
+    setTimeLeft(Math.ceil(remainingMs.current / 1000));
     setPaused(false);
   }
 
@@ -106,7 +126,7 @@ export default function GameScreen({ navigation }: Props) {
       <ArcadeBackdrop variant="game" minimal={!effects} />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => setPaused(true)} accessibilityLabel="Pausar jogo" style={styles.pauseButton}>
+          <TouchableOpacity onPress={freeze} accessibilityLabel="Pausar jogo" style={styles.pauseButton}>
             <Text style={styles.pauseGlyph}>Ⅱ</Text>
           </TouchableOpacity>
           <Text style={styles.brand}>TOQUE CERTO</Text>
@@ -172,7 +192,7 @@ export default function GameScreen({ navigation }: Props) {
             <Text style={styles.pauseTitle}>PAUSA</Text>
             <Text style={styles.pauseMessage}>O relógio está parado. Seus pontos continuam aqui.</Text>
             <NeonButton label="▶  CONTINUAR" onPress={resume} />
-            <TouchableOpacity style={styles.exitButton} onPress={() => { setPaused(false); finishedRef.current = true; navigation.reset({ index: 0, routes: [{ name: 'Start' }] }); }}>
+            <TouchableOpacity style={styles.exitButton} onPress={() => { pausedRef.current = false; setPaused(false); finishedRef.current = true; navigation.reset({ index: 0, routes: [{ name: 'Start' }] }); }}>
               <Text style={styles.exitText}>ENCERRAR PARTIDA</Text>
             </TouchableOpacity>
           </View>
