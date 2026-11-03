@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Share, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,6 +7,10 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { ArcadeBackdrop, NeonButton } from '../components/ArcadeUI';
+import { useAuth } from '../auth/AuthContext';
+import { loadProgress, saveProgress } from '../services/progressStore';
+import { rewardedAdsAvailable, showRewardedAd } from '../services/rewardedAds';
+import { applyGame, challengeLink, levelInfo, Progress } from '../utils/progression';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'GameOver'>;
 const publicUrl = 'https://toque-certo-pi.vercel.app';
@@ -15,6 +19,37 @@ export default function GameOverScreen({ navigation, route }: Props) {
   const { score, bestCombo, isNewRecord } = route.params;
   const [best, setBest] = useState(score);
   const [shareMessage, setShareMessage] = useState('');
+  const { user } = useAuth();
+  const [progress, setProgress] = useState<Progress | null>(null);
+  const [earned, setEarned] = useState({ xp: 0, coins: 0 });
+  const [leveledUp, setLeveledUp] = useState(false);
+  const [doubled, setDoubled] = useState(false);
+  const [adBusy, setAdBusy] = useState(false);
+  const applied = useRef(false);
+
+  useEffect(() => {
+    if (applied.current) return;
+    applied.current = true;
+    loadProgress().then(current => {
+      const result = applyGame(current, score, bestCombo);
+      setProgress(result.progress);
+      setEarned(result.reward);
+      setLeveledUp(result.leveledUp);
+      void saveProgress(result.progress);
+    });
+  }, [score, bestCombo]);
+
+  async function doubleCoins() {
+    if (adBusy || doubled || !progress) return;
+    setAdBusy(true);
+    const ok = await showRewardedAd();
+    setAdBusy(false);
+    if (!ok) { setShareMessage('VÍDEO INDISPONÍVEL AGORA. TENTE MAIS TARDE.'); return; }
+    const next = { ...progress, coins: progress.coins + earned.coins };
+    setProgress(next);
+    setDoubled(true);
+    void saveProgress(next);
+  }
 
   useEffect(() => {
     AsyncStorage.getItem('toqueCerto.bestScore').then(raw => {
@@ -24,11 +59,13 @@ export default function GameOverScreen({ navigation, route }: Props) {
   }, [score]);
 
   async function shareScore() {
-    const message = '⚡ TOQUE CERTO\nMarquei ' + score + ' pontos em apenas 30 segundos! 🏆\nMeu recorde: ' + best + '. Consegue superar?\n' + publicUrl;
+    const name = (user?.user_metadata?.full_name || user?.user_metadata?.name || '') as string;
+    const link = challengeLink(publicUrl, score, name.split(' ')[0] || undefined);
+    const message = '⚡ DESAFIO TOQUE CERTO ⚡\nFiz ' + score + ' pontos em 30 segundos (nível ' + levelInfo(progress?.xp ?? 0).level + ')! 🏆\nDuvido você me superar 👇\n' + link + '\n#ToqueCerto #Desafio';
     try {
       if (Platform.OS === 'web') {
         if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-          await navigator.share({ title: 'Toque Certo', text: message, url: publicUrl });
+          await navigator.share({ title: 'Desafio Toque Certo', text: message });
           return;
         }
         if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -36,7 +73,7 @@ export default function GameOverScreen({ navigation, route }: Props) {
           setShareMessage('DESAFIO COPIADO! ENVIE AOS AMIGOS.');
           return;
         }
-        setShareMessage('COMPARTILHE O LINK: ' + publicUrl);
+        setShareMessage('COMPARTILHE O LINK: ' + link);
         return;
       }
       await Share.share({ message, title: 'Desafio Toque Certo' });
@@ -76,6 +113,25 @@ export default function GameOverScreen({ navigation, route }: Props) {
                 <Text style={styles.statLabel}>⚡  MELHOR COMBO</Text>
                 <Text style={[styles.statValue, { color: colors.accentCyan }]}>×{bestCombo}</Text>
               </View>
+              <View style={styles.line} />
+              <View style={styles.row}>
+                <Text style={styles.statLabel}>✦  XP GANHO</Text>
+                <Text style={[styles.statValue, { color: colors.accentLime }]}>+{earned.xp}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.statLabel}>🪙  MOEDAS</Text>
+                <Text style={styles.statValue}>+{doubled ? earned.coins * 2 : earned.coins}</Text>
+              </View>
+              {progress && (() => {
+                const info = levelInfo(progress.xp);
+                return (
+                  <View style={{ marginTop: 10 }}>
+                    <Text style={styles.levelText}>{leveledUp ? '⬆ SUBIU PARA O NÍVEL ' : 'NÍVEL '}{info.level} · {info.title}</Text>
+                    <View style={styles.xpTrack}><View style={[styles.xpFill, { width: (Math.round(info.current / info.needed * 100) + '%') as '100%' }]} /></View>
+                    <Text style={styles.xpText}>{info.current}/{info.needed} XP · 🪙 {progress.coins}</Text>
+                  </View>
+                );
+              })()}
               <Text style={styles.encouragement}>{isNewRecord ? 'VOCÊ SUPEROU SEU LIMITE!' : 'MAIS UMA RODADA PARA IR ALÉM?'}</Text>
             </View>
           </LinearGradient>
@@ -83,7 +139,10 @@ export default function GameOverScreen({ navigation, route }: Props) {
 
         <View style={styles.ctas}>
           <NeonButton label="▶  JOGAR DE NOVO" onPress={() => navigation.replace('Game')} />
-          <NeonButton label="↗  COMPARTILHAR" kind="cyan" onPress={shareScore} />
+          {rewardedAdsAvailable() && !doubled && earned.coins > 0 && (
+            <NeonButton label={adBusy ? 'CARREGANDO VÍDEO…' : '🎬  DOBRAR MOEDAS (+' + earned.coins + ')'} kind="secondary" onPress={doubleCoins} />
+          )}
+          <NeonButton label="⚔  DESAFIAR AMIGOS" kind="cyan" onPress={shareScore} />
           <TouchableOpacity style={styles.menuLink} onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Start' }] })} accessibilityRole="button">
             <Text style={styles.menuText}>⌂   VOLTAR AO MENU</Text>
           </TouchableOpacity>
@@ -126,6 +185,10 @@ const styles = StyleSheet.create({
   menuLink: { padding: 8, alignItems: 'center' },
   menuText: { color: '#CECEF4', fontWeight: '900', letterSpacing: 1, fontSize: 12 },
   shareInfo: { textAlign: 'center', color: colors.accentLime, fontSize: 11, fontWeight: '900', lineHeight: 16 },
+  levelText: { color: '#F5CCFF', fontWeight: '900', fontSize: 12, letterSpacing: 1, textAlign: 'center' },
+  xpTrack: { height: 8, borderRadius: 8, backgroundColor: '#3A1F7A', marginTop: 8, overflow: 'hidden' },
+  xpFill: { height: '100%', backgroundColor: colors.accentLime, borderRadius: 8 },
+  xpText: { color: '#C8C8FB', fontSize: 10, fontWeight: '800', textAlign: 'center', marginTop: 6, letterSpacing: 0.8 },
   floor: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 26, opacity: 0.7 },
   floorGem: { fontSize: 22, textShadowColor: '#B643FF', textShadowRadius: 10 },
 });

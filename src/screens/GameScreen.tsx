@@ -8,6 +8,9 @@ import { RootStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { createSeededRandom, generateRound, resolveTap, ROUND_DURATION_MS, Round } from '../utils/gameLogic';
 import { ArcadeBackdrop, GlassStat, NeonButton } from '../components/ArcadeUI';
+import { rewardedAdsAvailable, showRewardedAd } from '../services/rewardedAds';
+
+const CONTINUE_BONUS_MS = 10_000;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Game'>;
 const symbols = ['#49E5FF', '#F66EFF', '#CDFF5F', '#FFB759', '#74A5FF', '#FF71A4'];
@@ -22,6 +25,9 @@ export default function GameScreen({ navigation }: Props) {
   const [flash, setFlash] = useState<'bonus' | 'wrong' | null>(null);
   const [paused, setPaused] = useState(false);
   const [effects, setEffects] = useState(true);
+  const [offerContinue, setOfferContinue] = useState(false);
+  const [adLoading, setAdLoading] = useState(false);
+  const continueUsed = useRef(false);
 
   const deadline = useRef(Date.now() + ROUND_DURATION_MS);
   const remainingMs = useRef(ROUND_DURATION_MS);
@@ -54,21 +60,48 @@ export default function GameScreen({ navigation }: Props) {
   useEffect(() => {
     if (timeLeft !== 0 || finishedRef.current || paused) return;
     finishedRef.current = true;
-    async function finish() {
-      const finalScore = scoreRef.current;
-      let isNewRecord = false;
-      try {
-        const value = await AsyncStorage.getItem('toqueCerto.bestScore');
-        const saved = Math.max(0, Number(value) || 0);
-        isNewRecord = finalScore > saved;
-        if (isNewRecord) await AsyncStorage.setItem('toqueCerto.bestScore', String(finalScore));
-      } catch {
-        // A partida deve terminar mesmo que o armazenamento local falhe.
-      }
-      navigation.replace('GameOver', { score: finalScore, bestCombo: bestComboRef.current, isNewRecord });
+    if (!continueUsed.current && rewardedAdsAvailable() && scoreRef.current > 0) {
+      setOfferContinue(true);
+      return;
     }
-    void finish();
+    void finishGame();
   }, [timeLeft, paused, navigation]);
+
+  async function finishGame() {
+    const finalScore = scoreRef.current;
+    let isNewRecord = false;
+    try {
+      const value = await AsyncStorage.getItem('toqueCerto.bestScore');
+      const saved = Math.max(0, Number(value) || 0);
+      isNewRecord = finalScore > saved;
+      if (isNewRecord) await AsyncStorage.setItem('toqueCerto.bestScore', String(finalScore));
+    } catch {
+      // A partida deve terminar mesmo que o armazenamento local falhe.
+    }
+    navigation.replace('GameOver', { score: finalScore, bestCombo: bestComboRef.current, isNewRecord });
+  }
+
+  async function watchToContinue() {
+    if (adLoading) return;
+    continueUsed.current = true;
+    setAdLoading(true);
+    const earned = await showRewardedAd();
+    setAdLoading(false);
+    setOfferContinue(false);
+    if (earned) {
+      deadline.current = Date.now() + CONTINUE_BONUS_MS;
+      finishedRef.current = false;
+      setTimeLeft(Math.ceil(CONTINUE_BONUS_MS / 1000));
+    } else {
+      void finishGame();
+    }
+  }
+
+  function declineContinue() {
+    continueUsed.current = true;
+    setOfferContinue(false);
+    void finishGame();
+  }
 
   useEffect(() => {
     if (!flash) return;
@@ -185,6 +218,19 @@ export default function GameScreen({ navigation }: Props) {
           <Text style={styles.bottomSub}>COMBOS DE 5 ACERTOS VALEM PONTO EXTRA</Text>
         </View>
       </ScrollView>
+
+      <Modal visible={offerContinue} transparent animationType="fade" onRequestClose={declineContinue}>
+        <View style={styles.pauseBackdrop}>
+          <View style={styles.pauseCard}>
+            <Text style={styles.pauseTitle}>TEMPO!</Text>
+            <Text style={styles.pauseMessage}>Você fez {score} pontos. Assista a um vídeo curto e ganhe +10 SEGUNDOS para continuar esta partida.</Text>
+            <NeonButton label={adLoading ? 'CARREGANDO…' : '🎬  +10s GRÁTIS'} onPress={watchToContinue} />
+            <TouchableOpacity style={styles.exitButton} onPress={declineContinue} disabled={adLoading}>
+              <Text style={styles.exitText}>NÃO, OBRIGADO</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={paused} transparent animationType="fade" onRequestClose={resume}>
         <View style={styles.pauseBackdrop}>

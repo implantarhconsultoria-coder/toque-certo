@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Switch } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Switch, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,6 +8,9 @@ import { RootStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { useAuth } from '../auth/AuthContext';
 import { ArcadeBackdrop, GlassStat, NeonButton } from '../components/ArcadeUI';
+import { loadProgress, saveProgress } from '../services/progressStore';
+import { rewardedAdsAvailable, showRewardedAd } from '../services/rewardedAds';
+import { canClaimDaily, claimDaily, dailyReward, EMPTY_PROGRESS, levelInfo, parseChallenge, Progress } from '../utils/progression';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Start'>;
 type Panel = 'missions' | 'settings' | 'profile' | null;
@@ -26,6 +29,36 @@ export default function StartScreen({ navigation }: Props) {
   }, [recoveryMode, navigation]);
   const [panel, setPanel] = useState<Panel>(null);
   const [effects, setEffects] = useState(true);
+  const [progress, setProgress] = useState<Progress>(EMPTY_PROGRESS);
+  const [dailyMsg, setDailyMsg] = useState('');
+  const [dailyBusy, setDailyBusy] = useState(false);
+  const [challenge, setChallenge] = useState<{ score: number; from: string | null } | null>(null);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      setChallenge(parseChallenge(window.location.href));
+      return;
+    }
+    Linking.getInitialURL().then(url => setChallenge(parseChallenge(url))).catch(() => {});
+    const sub = Linking.addEventListener('url', ({ url }) => setChallenge(parseChallenge(url)));
+    return () => sub.remove();
+  }, []);
+
+  async function collectDaily(withAd: boolean) {
+    if (dailyBusy) return;
+    setDailyBusy(true);
+    let multiplier = 1;
+    if (withAd) {
+      const ok = await showRewardedAd();
+      if (ok) multiplier = 2;
+    }
+    const current = await loadProgress();
+    const result = claimDaily(current, new Date(), multiplier);
+    setProgress(result.progress);
+    await saveProgress(result.progress);
+    setDailyMsg(result.coins > 0 ? '+' + result.coins + ' MOEDAS · SEQUÊNCIA ' + result.progress.streak + ' DIA(S) 🔥' : 'VOLTE AMANHÃ!');
+    setDailyBusy(false);
+  }
 
   const load = useCallback(async () => {
     try {
@@ -36,6 +69,7 @@ export default function StartScreen({ navigation }: Props) {
       const value = Number(saved);
       setBest(Number.isFinite(value) && value > 0 ? value : 0);
       setEffects(setting !== 'false');
+      setProgress(await loadProgress());
     } catch {
       setBest(0);
     }
@@ -53,6 +87,7 @@ export default function StartScreen({ navigation }: Props) {
   }
 
   const completed = achievements.filter(item => best >= item.target).length;
+  const level = levelInfo(progress.xp);
   return (
     <SafeAreaView style={styles.screen}>
       <ArcadeBackdrop minimal={!effects} />
@@ -63,7 +98,8 @@ export default function StartScreen({ navigation }: Props) {
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={styles.headerBrand}>TOQUE CERTO</Text>
-            <View style={styles.levelTrack}><LinearGradient colors={[colors.accentCyan, colors.accentPink]} style={[styles.levelProgress, { width: best >= 25 ? '100%' : best >= 10 ? '60%' : '25%' }]} /></View>
+            <View style={styles.levelTrack}><LinearGradient colors={[colors.accentCyan, colors.accentPink]} style={[styles.levelProgress, { width: (Math.max(4, Math.round(level.current / level.needed * 100)) + '%') as '100%' }]} /></View>
+            <Text style={styles.levelCaption}>NÍVEL {level.level} · {level.title} · 🪙 {progress.coins}</Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate(user ? 'Profile' : 'Auth')} accessibilityLabel="Abrir perfil ou entrar" style={styles.headerIcon}>
             <Text style={styles.headerGlyph}>◉</Text>
@@ -80,8 +116,27 @@ export default function StartScreen({ navigation }: Props) {
           </View>
         </View>
 
+        {challenge && (
+          <View style={styles.challengeBox}>
+            <Text style={styles.challengeTitle}>⚔  DESAFIO RECEBIDO</Text>
+            <Text style={styles.challengeText}>{challenge.from ? challenge.from + ' fez' : 'Seu amigo fez'} {challenge.score} pontos. Consegue superar?</Text>
+          </View>
+        )}
+
+        {canClaimDaily(progress, new Date()) ? (
+          <View style={styles.dailyBox}>
+            <Text style={styles.challengeTitle}>🎁  BÔNUS DIÁRIO: {dailyReward(progress.lastDailyClaim ? progress.streak + 1 : 1)} MOEDAS</Text>
+            <View style={styles.dailyRow}>
+              <TouchableOpacity style={styles.dailyBtn} onPress={() => collectDaily(false)} disabled={dailyBusy}><Text style={styles.dailyBtnText}>PEGAR</Text></TouchableOpacity>
+              {rewardedAdsAvailable() && (
+                <TouchableOpacity style={[styles.dailyBtn, styles.dailyBtnHot]} onPress={() => collectDaily(true)} disabled={dailyBusy}><Text style={[styles.dailyBtnText, { color: '#0A0612' }]}>🎬 PEGAR EM DOBRO</Text></TouchableOpacity>
+              )}
+            </View>
+          </View>
+        ) : !!dailyMsg && <Text style={styles.dailyDone}>{dailyMsg}</Text>}
+
         <View style={styles.actions}>
-          <NeonButton label="▶  JOGAR" onPress={() => navigation.navigate('Game')} />
+          <NeonButton label={challenge ? '⚔  ACEITAR DESAFIO' : '▶  JOGAR'} onPress={() => navigation.navigate('Game')} />
           <TouchableOpacity onPress={() => navigation.navigate(user ? 'Profile' : 'Auth')} accessibilityRole="button" style={{ alignItems: 'center', paddingVertical: 9 }}>
             <Text style={{ color: colors.accentCyan, fontSize: 11, letterSpacing: 1, fontWeight: '900' }}>{user ? '◉  MEU PERFIL' : configured ? '◉  ENTRAR / CRIAR CONTA' : '◉  CONTA ONLINE EM PREPARAÇÃO'}</Text>
           </TouchableOpacity>
@@ -96,7 +151,7 @@ export default function StartScreen({ navigation }: Props) {
             <GlassStat label="🏆  RECORDE" value={String(best)} accent={colors.accentLime} />
             <GlassStat label="✦  MISSÕES" value={String(completed) + '/3'} accent={colors.accentCyan} />
           </View>
-          <Text style={styles.footerNote}>JOGUE GRÁTIS · SEM CADASTRO · OFFLINE</Text>
+          <Text style={styles.footerNote}>JOGUE GRÁTIS · SUBA DE NÍVEL · DESAFIE AMIGOS</Text>
         </View>
       </ScrollView>
 
@@ -145,6 +200,16 @@ export default function StartScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
+  levelCaption: { color: '#AFB8E3', fontSize: 9, fontWeight: '900', letterSpacing: 1, marginTop: 6, textAlign: 'center' },
+  challengeBox: { marginTop: 14, padding: 12, borderRadius: 16, borderWidth: 1.5, borderColor: colors.accentPink, backgroundColor: 'rgba(120,30,150,0.35)' },
+  challengeTitle: { color: '#FFE35E', fontWeight: '900', fontSize: 12, letterSpacing: 1, textAlign: 'center' },
+  challengeText: { color: '#F5D5FF', fontSize: 12, textAlign: 'center', marginTop: 4 },
+  dailyBox: { marginTop: 14, padding: 12, borderRadius: 16, borderWidth: 1.5, borderColor: colors.accentLime, backgroundColor: 'rgba(40,60,20,0.35)' },
+  dailyRow: { flexDirection: 'row', gap: 10, justifyContent: 'center', marginTop: 10 },
+  dailyBtn: { paddingVertical: 9, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1.5, borderColor: colors.accentLime },
+  dailyBtnHot: { backgroundColor: colors.accentLime },
+  dailyBtnText: { color: colors.accentLime, fontWeight: '900', fontSize: 11, letterSpacing: 1 },
+  dailyDone: { color: colors.accentLime, fontWeight: '900', fontSize: 11, textAlign: 'center', marginTop: 12, letterSpacing: 1 },
   screen: { flex: 1, backgroundColor: colors.bgDeep },
   scroll: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingHorizontal: 22, maxWidth: 460, width: '100%', alignSelf: 'center', paddingTop: 10, paddingBottom: 22 },
