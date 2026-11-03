@@ -8,7 +8,7 @@ export function rewardedAdsAvailable(): boolean {
 
 function unitId(TestIds: { REWARDED: string }): string {
   const real = Platform.OS === 'ios'
-    ? process.env.EXPO_PUBLIC_ADMOB_REWARDED_IOS
+    ? (process.env.EXPO_PUBLIC_ADMOB_REWARDED_IOS || 'ca-app-pub-9360827223542670/2709077242')
     : process.env.EXPO_PUBLIC_ADMOB_REWARDED_ANDROID;
   return real?.trim() || TestIds.REWARDED;
 }
