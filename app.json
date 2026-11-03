@@ -25,7 +25,7 @@
       [
         "react-native-google-mobile-ads",
         {
-          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+          "iosAppId": "ca-app-pub-9360827223542670~8448936195",
           "androidAppId": "ca-app-pub-3940256099942544~3347511713",
           "userTrackingUsageDescription": "Usamos este identificador para mostrar anúncios mais relevantes. Os vídeos com recompensa são sempre opcionais."
         }
