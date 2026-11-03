@@ -12,8 +12,8 @@
 ## Antes da build de loja (obrigatório)
 | Item | Onde |
 |---|---|
-| App IDs reais do AdMob (iOS e Android) | `app.json` → plugin `react-native-google-mobile-ads` (hoje estão os IDs de TESTE do Google) |
-| IDs dos blocos "Rewarded" | EAS env: `EXPO_PUBLIC_ADMOB_REWARDED_IOS`, `EXPO_PUBLIC_ADMOB_REWARDED_ANDROID` (sem eles, usa anúncio de teste) |
+| App IDs reais do AdMob (iOS e Android) | `app.json` → plugin `react-native-google-mobile-ads` (IDs reais já configurados) |
+| IDs dos blocos "Rewarded" | EAS env: `EXPO_PUBLIC_ADMOB_REWARDED_IOS`, `EXPO_PUBLIC_ADMOB_REWARDED_ANDROID` (opcional: os IDs reais já estão no código) |
 | Supabase | EAS env: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` |
 | Expo/EAS | `EXPO_TOKEN` válido; `eas init` liga o projeto (projectId) |
 | Apple | Conta Developer, app criado no App Store Connect com bundle `com.implanta.toquecerto` |
