@@ -8,7 +8,11 @@
     "backgroundColor": "#0A0612",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.implanta.toquecerto"
+      "bundleIdentifier": "com.implanta.toquecerto",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.implanta.toquecerto"
@@ -16,6 +20,16 @@
     "web": {
       "bundler": "metro"
     },
-    "scheme": "toquecerto"
+    "scheme": "toquecerto",
+    "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "userTrackingUsageDescription": "Usamos este identificador para mostrar anúncios mais relevantes. Os vídeos com recompensa são sempre opcionais."
+        }
+      ]
+    ]
   }
 }
