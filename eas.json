@@ -28,7 +28,8 @@
   "submit": {
     "testflight": {
       "ios": {
-        "ascAppId": "PREENCHER_APP_ID_DO_APP_STORE_CONNECT"
+        "ascAppId": "6830062323",
+        "appleTeamId": "44W3VC33H2"
       }
     },
     "production": {
