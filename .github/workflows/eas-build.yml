@@ -1,0 +1,59 @@
+name: Toque Certo - Build EAS e envio às lojas (teste)
+
+# Manual. Compila no EAS e envia ao TestFlight (iOS) e/ou faixa interna do Google Play (Android).
+# Não publica para o público. Requer o secret EXPO_TOKEN (conta rodrigo_pulzr).
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'ios, android ou all'
+        required: true
+        default: 'all'
+      submit:
+        description: 'Enviar às lojas após a build (true/false)'
+        required: true
+        default: 'true'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: toque-certo-eas
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - name: Exigir EXPO_TOKEN
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Secret EXPO_TOKEN ausente. Crie em https://expo.dev/settings/access-tokens e adicione em Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:logic
+      - name: Conta Expo
+        run: npx --yes eas-cli@latest whoami
+      - name: Ligar projeto EAS (cria se ainda não existir)
+        run: npx --yes eas-cli@latest init --non-interactive --force
+      - name: Build e envio
+        run: |
+          PROFILE_IOS=testflight
+          PROFILE_ANDROID=production
+          SUBMIT=""
+          if [ "${{ github.event.inputs.submit }}" = "true" ]; then SUBMIT="--auto-submit"; fi
+          case "${{ github.event.inputs.platform }}" in
+            ios)     npx --yes eas-cli@latest build -p ios --profile $PROFILE_IOS --non-interactive --wait $SUBMIT ;;
+            android) npx --yes eas-cli@latest build -p android --profile $PROFILE_ANDROID --non-interactive --wait $SUBMIT ;;
+            *)       npx --yes eas-cli@latest build -p android --profile $PROFILE_ANDROID --non-interactive --wait $SUBMIT
+                     npx --yes eas-cli@latest build -p ios --profile $PROFILE_IOS --non-interactive --wait $SUBMIT ;;
+          esac
