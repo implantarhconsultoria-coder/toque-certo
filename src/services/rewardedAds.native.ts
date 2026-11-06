@@ -22,11 +22,29 @@ function unitId(testId: string): string {
 
 let initialized = false;
 
+/** Atualiza consentimento UMP antes de inicializar ou solicitar publicidade. */
+async function canRequestAds(ads: any): Promise<boolean> {
+  try {
+    const consent = await ads.AdsConsent.gatherConsent();
+    return consent.canRequestAds === true;
+  } catch {
+    // Só permite o anúncio se o SDK ainda reconhecer consentimento anterior válido.
+    try {
+      const cached = await ads.AdsConsent.getConsentInfo();
+      return cached.canRequestAds === true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+
 /** Só concede recompensa após evento EARNED_REWARD do SDK. */
 export async function showRewardedAd(): Promise<boolean> {
   if (!rewardedAdsAvailable()) return false;
   try {
     const ads = require('react-native-google-mobile-ads');
+    if (!(await canRequestAds(ads))) return false;
     if (!initialized) {
       await ads.default().initialize();
       initialized = true;
