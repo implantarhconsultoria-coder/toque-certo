@@ -1,44 +1,67 @@
-// Anúncios com recompensa (AdMob) — versão nativa (iOS/Android). O web usa rewardedAds.web.ts.
-// IDs reais vêm de EXPO_PUBLIC_ADMOB_REWARDED_IOS / _ANDROID; sem eles usa os IDs de TESTE do Google.
+// Anúncios premiados para iOS e Android; a versão web não exibe anúncios.
+// Desenvolvimento usa exclusivamente unidades oficiais de teste do Google.
+// Produção usa as unidades AdMob configuradas para o Toque Certo.
 import { Platform } from 'react-native';
 
 export function rewardedAdsAvailable(): boolean {
   return Platform.OS === 'ios' || Platform.OS === 'android';
 }
 
-function unitId(TestIds: { REWARDED: string }): string {
-  const real = Platform.OS === 'ios'
-    ? (process.env.EXPO_PUBLIC_ADMOB_REWARDED_IOS || 'ca-app-pub-9360827223542670/2709077242')
-    : (process.env.EXPO_PUBLIC_ADMOB_REWARDED_ANDROID || 'ca-app-pub-9360827223542670/8368598037');
-  return real?.trim() || TestIds.REWARDED;
+const PRODUCTION_REWARDED_IOS = 'ca-app-pub-9360827223542670/2709077242';
+const PRODUCTION_REWARDED_ANDROID = 'ca-app-pub-9360827223542670/8368598037';
+
+function unitId(testId: string): string {
+  if (__DEV__) return testId;
+  const configured = Platform.OS === 'ios'
+    ? process.env.EXPO_PUBLIC_ADMOB_REWARDED_IOS
+    : process.env.EXPO_PUBLIC_ADMOB_REWARDED_ANDROID;
+  return configured?.trim() || (Platform.OS === 'ios'
+    ? PRODUCTION_REWARDED_IOS
+    : PRODUCTION_REWARDED_ANDROID);
 }
 
 let initialized = false;
 
-/** Mostra um anúncio com recompensa. Resolve true só se o usuário ganhou a recompensa. */
+/** Só concede recompensa após evento EARNED_REWARD do SDK. */
 export async function showRewardedAd(): Promise<boolean> {
   if (!rewardedAdsAvailable()) return false;
-  const ads = require('react-native-google-mobile-ads');
-  if (!initialized) {
-    try { await ads.default().initialize(); } catch {}
-    initialized = true;
+  try {
+    const ads = require('react-native-google-mobile-ads');
+    if (!initialized) {
+      await ads.default().initialize();
+      initialized = true;
+    }
+
+    const ad = ads.RewardedAd.createForAdRequest(unitId(ads.TestIds.REWARDED), {
+      requestNonPersonalizedAdsOnly: true,
+    });
+
+    return await new Promise<boolean>(resolve => {
+      let earned = false;
+      let done = false;
+      let timeout: ReturnType<typeof setTimeout> | undefined;
+      const subs: Array<() => void> = [];
+      const finish = (value: boolean) => {
+        if (done) return;
+        done = true;
+        if (timeout) clearTimeout(timeout);
+        subs.forEach(unsub => { try { unsub(); } catch {} });
+        resolve(value);
+      };
+
+      subs.push(ad.addAdEventListener(ads.RewardedAdEventType.LOADED, () => {
+        ad.show().catch(() => finish(false));
+      }));
+      subs.push(ad.addAdEventListener(ads.RewardedAdEventType.EARNED_REWARD, () => {
+        earned = true;
+      }));
+      subs.push(ad.addAdEventListener(ads.AdEventType.CLOSED, () => finish(earned)));
+      subs.push(ad.addAdEventListener(ads.AdEventType.ERROR, () => finish(false)));
+      timeout = setTimeout(() => finish(false), 60_000);
+      try { ad.load(); } catch { finish(false); }
+    });
+  } catch {
+    // Sem SDK ou sem anúncio disponível: não bloquear o jogo e não dar recompensa.
+    return false;
   }
-  const ad = ads.RewardedAd.createForAdRequest(unitId(ads.TestIds), { requestNonPersonalizedAdsOnly: true });
-  return new Promise<boolean>(resolve => {
-    let earned = false;
-    let done = false;
-    const subs: Array<() => void> = [];
-    const finish = (value: boolean) => {
-      if (done) return;
-      done = true;
-      subs.forEach(unsub => { try { unsub(); } catch {} });
-      resolve(value);
-    };
-    subs.push(ad.addAdEventListener(ads.RewardedAdEventType.LOADED, () => { ad.show().catch(() => finish(false)); }));
-    subs.push(ad.addAdEventListener(ads.RewardedAdEventType.EARNED_REWARD, () => { earned = true; }));
-    subs.push(ad.addAdEventListener(ads.AdEventType.CLOSED, () => finish(earned)));
-    subs.push(ad.addAdEventListener(ads.AdEventType.ERROR, () => finish(false)));
-    setTimeout(() => finish(earned), 60_000);
-    ad.load();
-  });
 }
