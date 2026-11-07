@@ -12,10 +12,12 @@
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "icon": "./assets/icon.png"
     },
     "android": {
-      "package": "com.implanta.toquecerto"
+      "package": "com.implanta.toquecerto",
+      "icon": "./assets/icon.png"
     },
     "web": {
       "bundler": "metro"
@@ -36,6 +38,7 @@
       "eas": {
         "projectId": "a7a30eae-0f98-4ca8-bee7-61ad009e8493"
       }
-    }
+    },
+    "icon": "./assets/icon.png"
   }
 }
