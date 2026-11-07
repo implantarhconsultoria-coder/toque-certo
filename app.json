@@ -30,6 +30,12 @@
           "userTrackingUsageDescription": "Usamos este identificador para mostrar anúncios mais relevantes. Os vídeos com recompensa são sempre opcionais."
         }
       ]
-    ]
+    ],
+    "owner": "implanta-x-pro-jogos",
+    "extra": {
+      "eas": {
+        "projectId": "a7a30eae-0f98-4ca8-bee7-61ad009e8493"
+      }
+    }
   }
 }
