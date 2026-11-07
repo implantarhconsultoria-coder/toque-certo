@@ -41,6 +41,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run test:logic
+      - run: npm run preflight:ads
       - name: Conta Expo
         run: npx --yes eas-cli@latest whoami
       - name: Ligar projeto EAS (cria se ainda não existir)
