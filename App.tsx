@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { startAds } from './src/services/rewardedAds';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
@@ -12,6 +13,8 @@ import GameOverScreen from './src/screens/GameOverScreen';
 import { colors } from './src/theme/colors';
 
 export default function App() {
+  // Consentimento (UMP/ATT), inicialização do SDK e pré-carregamento do premiado.
+  useEffect(() => { startAds(); }, []);
   return (
     <SafeAreaProvider>
     <AuthProvider>
