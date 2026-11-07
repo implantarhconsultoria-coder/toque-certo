@@ -9,7 +9,7 @@ import { colors } from '../theme/colors';
 import { ArcadeBackdrop, NeonButton } from '../components/ArcadeUI';
 import { useAuth } from '../auth/AuthContext';
 import { loadProgress, saveProgress } from '../services/progressStore';
-import { rewardedAdsAvailable, showRewardedAd } from '../services/rewardedAds';
+import { preloadRewardedAd, rewardedAdsAvailable, showRewardedAd } from '../services/rewardedAds';
 import { applyGame, challengeLink, levelInfo, Progress } from '../utils/progression';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'GameOver'>;
@@ -27,6 +27,8 @@ export default function GameOverScreen({ navigation, route }: Props) {
   const [adBusy, setAdBusy] = useState(false);
   const applied = useRef(false);
 
+  useEffect(() => { preloadRewardedAd('fim_de_partida'); }, []);
+
   useEffect(() => {
     if (applied.current) return;
     applied.current = true;
@@ -42,7 +44,7 @@ export default function GameOverScreen({ navigation, route }: Props) {
   async function doubleCoins() {
     if (adBusy || doubled || !progress) return;
     setAdBusy(true);
-    const ok = await showRewardedAd();
+    const ok = await showRewardedAd('dobrar_moedas');
     setAdBusy(false);
     if (!ok) { setShareMessage('VÍDEO INDISPONÍVEL AGORA. TENTE MAIS TARDE.'); return; }
     const next = { ...progress, coins: progress.coins + earned.coins };

@@ -8,7 +8,7 @@ import { RootStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { createSeededRandom, generateRound, resolveTap, ROUND_DURATION_MS, Round } from '../utils/gameLogic';
 import { ArcadeBackdrop, GlassStat, NeonButton } from '../components/ArcadeUI';
-import { rewardedAdsAvailable, showRewardedAd } from '../services/rewardedAds';
+import { preloadRewardedAd, rewardedAdsAvailable, showRewardedAd } from '../services/rewardedAds';
 
 const CONTINUE_BONUS_MS = 10_000;
 
@@ -36,6 +36,9 @@ export default function GameScreen({ navigation }: Props) {
   const bestComboRef = useRef(0);
   const finishedRef = useRef(false);
   const tapLock = useRef(false);
+
+  // Prepara o vídeo durante a partida para o "+10 segundos" abrir sem espera.
+  useEffect(() => { preloadRewardedAd('partida'); }, []);
 
   useEffect(() => {
     AsyncStorage.getItem('toqueCerto.visualEffects').then(value => setEffects(value !== 'false')).catch(() => {});
@@ -85,7 +88,7 @@ export default function GameScreen({ navigation }: Props) {
     if (adLoading) return;
     continueUsed.current = true;
     setAdLoading(true);
-    const earned = await showRewardedAd();
+    const earned = await showRewardedAd('continuar_partida');
     setAdLoading(false);
     setOfferContinue(false);
     if (earned) {

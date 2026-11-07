@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "build:web": "expo export --platform web",
-    "test:logic": "node --experimental-strip-types --test tests/*.test.mjs"
+    "test:logic": "node --experimental-strip-types --test tests/*.test.mjs",
+    "preflight:ads": "node scripts/ads-preflight.mjs"
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.16",
@@ -20,6 +21,7 @@
     "expo": "~57.0.31",
     "expo-linear-gradient": "~57.0.2",
     "expo-status-bar": "~57.0.1",
+    "expo-tracking-transparency": "~57.0.2",
     "expo-web-browser": "~57.0.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",

@@ -9,7 +9,8 @@ import { colors } from '../theme/colors';
 import { useAuth } from '../auth/AuthContext';
 import { ArcadeBackdrop, GlassStat, NeonButton } from '../components/ArcadeUI';
 import { loadProgress, saveProgress } from '../services/progressStore';
-import { rewardedAdsAvailable, showRewardedAd } from '../services/rewardedAds';
+import AdDiagnosticsPanel from '../components/AdDiagnosticsPanel';
+import { preloadRewardedAd, rewardedAdsAvailable, showRewardedAd } from '../services/rewardedAds';
 import { canClaimDaily, claimDaily, dailyReward, EMPTY_PROGRESS, levelInfo, parseChallenge, Progress } from '../utils/progression';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Start'>;
@@ -23,6 +24,8 @@ const achievements = [
 export default function StartScreen({ navigation }: Props) {
   const [best, setBest] = useState(0);
   const { user, configured, recoveryMode } = useAuth();
+
+  useEffect(() => { preloadRewardedAd('inicio'); }, []);
 
   useEffect(() => {
     if (recoveryMode) navigation.navigate('Auth');
@@ -49,7 +52,7 @@ export default function StartScreen({ navigation }: Props) {
     setDailyBusy(true);
     let multiplier = 1;
     if (withAd) {
-      const ok = await showRewardedAd();
+      const ok = await showRewardedAd('bonus_diario');
       if (ok) multiplier = 2;
     }
     const current = await loadProgress();
@@ -181,6 +184,7 @@ export default function StartScreen({ navigation }: Props) {
                 </View>
                 <Text style={styles.settingHelp}>COMO JOGAR</Text>
                 <Text style={styles.settingText}>Toque no símbolo indicado. Acertos somam pontos; cada erro custa 1 segundo. A cada 5 acertos consecutivos, você ganha 1 ponto extra. A grade cresce conforme a pontuação.</Text>
+                <AdDiagnosticsPanel />
               </>
             )}
             {panel === 'profile' && (
