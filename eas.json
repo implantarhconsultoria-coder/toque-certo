@@ -36,6 +36,17 @@
         "EXPO_PUBLIC_ADMOB_USE_TEST_IDS": "1",
         "EXPO_PUBLIC_AD_DIAGNOSTICS": "1"
       }
+    },
+    "ads-validation-ios": {
+      "distribution": "store",
+      "ios": {
+        "simulator": false
+      },
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_ADMOB_USE_TEST_IDS": "1",
+        "EXPO_PUBLIC_AD_DIAGNOSTICS": "1"
+      }
     }
   },
   "submit": {

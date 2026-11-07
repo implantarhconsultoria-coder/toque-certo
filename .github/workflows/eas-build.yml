@@ -10,9 +10,13 @@ on:
         required: true
         default: 'all'
       submit:
-        description: 'Enviar às lojas após a build (true/false)'
+        description: 'Enviar às lojas após a build (true/false). Ignorado em validacao.'
         required: true
         default: 'true'
+      profile:
+        description: 'loja (IDs reais) ou validacao (anúncios de TESTE + diagnóstico, nunca envia às lojas)'
+        required: false
+        default: 'loja'
 
 permissions:
   contents: read
@@ -52,6 +56,12 @@ jobs:
           PROFILE_ANDROID=production
           SUBMIT=""
           if [ "${{ github.event.inputs.submit }}" = "true" ]; then SUBMIT="--auto-submit"; fi
+          if [ "${{ github.event.inputs.profile }}" = "validacao" ]; then
+            PROFILE_IOS=ads-validation-ios
+            PROFILE_ANDROID=ads-validation
+            SUBMIT=""
+          fi
+          echo "Perfis: iOS=$PROFILE_IOS Android=$PROFILE_ANDROID envio='${SUBMIT:-nenhum}'"
           case "${{ github.event.inputs.platform }}" in
             ios)     npx --yes eas-cli@latest build -p ios --profile $PROFILE_IOS --non-interactive --wait $SUBMIT ;;
             android) npx --yes eas-cli@latest build -p android --profile $PROFILE_ANDROID --non-interactive --wait $SUBMIT ;;

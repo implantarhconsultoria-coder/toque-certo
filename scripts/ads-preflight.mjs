@@ -39,8 +39,10 @@ for (const name of ['production', 'testflight']) {
     if (env[k] && /3940256099942544/.test(env[k])) errors.push(`Perfil ${name}: ${k} é ID de teste.`);
   }
 }
-const validation = eas.build?.['ads-validation']?.env ?? {};
-if (validation.EXPO_PUBLIC_ADMOB_USE_TEST_IDS !== '1') errors.push('Perfil ads-validation deve usar anúncios de teste.');
+for (const name of ['ads-validation', 'ads-validation-ios']) {
+  const env = eas.build?.[name]?.env ?? {};
+  if (env.EXPO_PUBLIC_ADMOB_USE_TEST_IDS !== '1') errors.push(`Perfil ${name} deve usar anúncios de teste.`);
+}
 
 if (errors.length) {
   console.error('Preflight de anúncios REPROVADO:\n- ' + errors.join('\n- '));
