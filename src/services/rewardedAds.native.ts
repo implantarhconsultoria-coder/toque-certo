@@ -1,7 +1,7 @@
 // Anúncios premiados para iOS e Android; a versão web não exibe anúncios.
 // Desenvolvimento usa exclusivamente unidades oficiais de teste do Google.
 // Produção usa as unidades AdMob configuradas para o Toque Certo.
-import { Platform } from 'react-native';
+import { Alert, Platform } from 'react-native';
 
 export function rewardedAdsAvailable(): boolean {
   return Platform.OS === 'ios' || Platform.OS === 'android';
@@ -22,19 +22,31 @@ function unitId(testId: string): string {
 
 let initialized = false;
 
+function reportFailure(stage: string, error?: unknown): void {
+  const detail = error as { code?: string; message?: string } | undefined;
+  const code = detail?.code || stage;
+  let message = 'Não foi possível carregar o vídeo. Tente novamente mais tarde.';
+  if (code.includes('no-fill')) message = 'Não há vídeo disponível do anunciante neste momento.';
+  if (code.includes('network')) message = 'Não foi possível conectar ao serviço de anúncios. Confira sua conexão.';
+  // O código permite diagnosticar a falha real no aparelho, sem expor credenciais.
+  Alert.alert('Vídeo indisponível', `${message}\n\nCódigo: ${code}\n${detail?.message || stage}`);
+}
+
+
 /** Atualiza consentimento UMP antes de inicializar ou solicitar publicidade. */
 async function canRequestAds(ads: any): Promise<boolean> {
   try {
     const consent = await ads.AdsConsent.gatherConsent();
     return consent.canRequestAds === true;
-  } catch {
+  } catch (consentError) {
     // Só permite o anúncio se o SDK ainda reconhecer consentimento anterior válido.
     try {
       const cached = await ads.AdsConsent.getConsentInfo();
-      return cached.canRequestAds === true;
+      if (cached.canRequestAds === true) return true;
     } catch {
-      return false;
+      // Preserva o erro original para diagnóstico no aparelho.
     }
+    throw consentError;
   }
 }
 
@@ -44,7 +56,10 @@ export async function showRewardedAd(): Promise<boolean> {
   if (!rewardedAdsAvailable()) return false;
   try {
     const ads = require('react-native-google-mobile-ads');
-    if (!(await canRequestAds(ads))) return false;
+    if (!(await canRequestAds(ads))) {
+      reportFailure('consentimento-pendente');
+      return false;
+    }
     if (!initialized) {
       await ads.default().initialize();
       initialized = true;
@@ -68,17 +83,29 @@ export async function showRewardedAd(): Promise<boolean> {
       };
 
       subs.push(ad.addAdEventListener(ads.RewardedAdEventType.LOADED, () => {
-        ad.show().catch(() => finish(false));
+        // O limite é apenas para carregar, nunca para a duração do vídeo.
+        if (timeout) clearTimeout(timeout);
+        ad.show().catch((error: unknown) => {
+          reportFailure('exibicao', error);
+          finish(false);
+        });
       }));
       subs.push(ad.addAdEventListener(ads.RewardedAdEventType.EARNED_REWARD, () => {
         earned = true;
       }));
       subs.push(ad.addAdEventListener(ads.AdEventType.CLOSED, () => finish(earned)));
-      subs.push(ad.addAdEventListener(ads.AdEventType.ERROR, () => finish(false)));
-      timeout = setTimeout(() => finish(false), 60_000);
-      try { ad.load(); } catch { finish(false); }
+      subs.push(ad.addAdEventListener(ads.AdEventType.ERROR, (error: unknown) => {
+        reportFailure('carregamento', error);
+        finish(false);
+      }));
+      timeout = setTimeout(() => {
+        reportFailure('tempo-de-carregamento-esgotado');
+        finish(false);
+      }, 30_000);
+      try { ad.load(); } catch (error) { reportFailure('carregamento', error); finish(false); }
     });
-  } catch {
+  } catch (error) {
+    reportFailure('inicializacao', error);
     // Sem SDK ou sem anúncio disponível: não bloquear o jogo e não dar recompensa.
     return false;
   }
