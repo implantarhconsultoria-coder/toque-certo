@@ -10,7 +10,7 @@ import { useAuth } from '../auth/AuthContext';
 import { ArcadeBackdrop, GlassStat, NeonButton } from '../components/ArcadeUI';
 import { loadProgress, saveProgress } from '../services/progressStore';
 import AdDiagnosticsPanel from '../components/AdDiagnosticsPanel';
-import { preloadRewardedAd, rewardedAdsAvailable, showRewardedAd } from '../services/rewardedAds';
+import { preloadRewardedAd, rewardedAdsAvailable, showRewardedAd, showAdPrivacyOptions } from '../services/rewardedAds';
 import { canClaimDaily, claimDaily, dailyReward, EMPTY_PROGRESS, levelInfo, parseChallenge, Progress } from '../utils/progression';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Start'>;
@@ -184,6 +184,12 @@ export default function StartScreen({ navigation }: Props) {
                 </View>
                 <Text style={styles.settingHelp}>COMO JOGAR</Text>
                 <Text style={styles.settingText}>Toque no símbolo indicado. Acertos somam pontos; cada erro custa 1 segundo. A cada 5 acertos consecutivos, você ganha 1 ponto extra. A grade cresce conforme a pontuação.</Text>
+                {rewardedAdsAvailable() && (
+                  <TouchableOpacity onPress={() => { void showAdPrivacyOptions(); }} accessibilityRole="button" style={{ paddingVertical: 14 }}>
+                    <Text style={styles.settingHelp}>PRIVACIDADE DOS ANÚNCIOS</Text>
+                    <Text style={styles.missionDesc}>Rever suas escolhas de consentimento</Text>
+                  </TouchableOpacity>
+                )}
                 <AdDiagnosticsPanel />
               </>
             )}
