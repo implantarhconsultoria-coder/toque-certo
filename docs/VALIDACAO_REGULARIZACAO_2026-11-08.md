@@ -25,12 +25,13 @@ Base: `main` em `a5d78cf` (PR #10 já integrado). Trabalho anterior local preser
 
 As verificações de formulário UMP/ATT no aparelho, anúncio premiado e recompensa continuam obrigatórias. Os testes simulam o SDK e comprovam as regras do controlador, não a entrega do anunciante.
 
-## Bloqueios externos já registrados no PR #10
+## Histórico de bloqueios do PR #10 e evidências atuais
 
-- O workflow anterior falhou antes da build: `Entity Not Authorized` ao ler o projeto Expo `a7a30eae-0f98-4ca8-bee7-61ad009e8493`. É preciso token com acesso ao dono `implanta-x-pro-jogos`.
-- Certificado de distribuição iOS anteriormente não validado para builds não interativas; requer sessão EAS/Apple autorizada.
+- Histórico, sem nova tentativa nesta missão: o workflow anterior falhou antes da build: `Entity Not Authorized` ao ler o projeto Expo `a7a30eae-0f98-4ca8-bee7-61ad009e8493`. O token do CI usado na próxima tentativa precisa ter acesso ao dono `implanta-x-pro-jogos`; isso não prova bloqueio atual da conta.
+- Histórico: certificado de distribuição iOS anteriormente não validado para builds não interativas. Revalidar a situação antes de uma nova build; não presumir que o erro continua atual.
 - Não foi instalado adaptador de mediação Liftoff; configuração de leilão no AdMob sozinha não comprova presença de adaptador no binário.
-- Situação atual App Store/Google Play, Data Safety e mensagens publicadas no AdMob precisam ser conferidas nos consoles autenticados.
+- Evidência autenticada atual: organização Expo acessível; build iOS 1.0.0 (4), perfil testflight, commit 28f354e, concluída em 07/11/2026, com envio ASC concluído: https://expo.dev/accounts/implanta-x-pro-jogos/projects/toque-certo/builds/04e93970-c76e-470b-b085-b3778f2bdb5d . Essa build não contém o PR #12 e não substitui teste físico.
+- App Store iOS 1.0 em Preparar para envio. Play: rascunho/teste interno, produção inativa; configuração inicial agora 5/11 com rascunhos política, anúncios Sim, governo Não, financeiro Não e saúde Não. Categoria Arcade salva; contato não salvo no botão Salvar e publicar. Data Safety e mensagens AdMob continuam pendentes de confirmação.
 - Builds remotas dependem de acesso e de autorização de consumo de créditos; submissão/publicação depende de aprovação final.
 
 Referência: https://github.com/implantarhconsultoria-coder/toque-certo/pull/10

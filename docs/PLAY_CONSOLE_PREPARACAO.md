@@ -10,9 +10,13 @@ Inspeção autenticada da sessão principal nesta missão:
 |---|---|---|
 | App Store Connect | Versão iOS 1.0 em “Preparar para envio” | Não consta aprovação/publicação nesta observação |
 | Google Play | App em rascunho, área de teste interno, produção inativa | Não tratar como publicado |
-| Configuração inicial Play | 0 de 11 tarefas concluídas | Completar ficha/conteúdo/acesso antes da submissão |
+| Configuração inicial Play | 5 de 11 tarefas concluídas após salvar rascunhos | Política, anúncios, governo, financeiro e saúde preenchidos; demais tarefas pendentes |
 
-Não aceitar contratos, publicar ou enviar revisão sem aprovação final. Build nativa também depende de acesso Expo/Apple e eventual autorização de créditos.
+Rascunhos salvos no Play nesta missão: política de privacidade com URL existente; contém anúncios **Sim**; app de governo **Não**; recursos financeiros **Não**; saúde **Não**. Categoria Arcade salva. O botão de contato **“Salvar e publicar” não foi acionado**. Isso não representa publicação nem liberação de produção.
+
+A organização Expo `implanta-x-pro-jogos` foi acessada pelo navegador autenticado. Foi encontrada build iOS **1.0.0 (4)**, perfil `testflight`, commit **28f354e**, concluída com sucesso em 07/11/2026 e com envio ao App Store Connect concluído: https://expo.dev/accounts/implanta-x-pro-jogos/projects/toque-certo/builds/04e93970-c76e-470b-b085-b3778f2bdb5d . Essa build antecede e **não incorpora o PR #12**. Disponibilidade da build não comprova teste em aparelho.
+
+Não aceitar contratos, publicar ou enviar revisão sem aprovação final. Uma nova build não foi tentada nesta missão por depender de eventual autorização de créditos; o acesso web Expo funciona. Os erros antigos de token CI/certificado são históricos, não uma prova de bloqueio atual absoluto.
 
 ## Ficha em português — textos prontos para rascunho
 
@@ -102,8 +106,8 @@ O fluxo principal pode ser usado como convidado: abrir → Jogar → tocar no s�
 ## Checklist para concluir as tarefas iniciais sem publicação
 
 - [ ] Salvar os textos da ficha como rascunho; usar imagens reais da build testada.
-- [ ] Salvar URL de política existente; revisar lacunas antes da declaração final.
-- [ ] Declarar presença de anúncios; preservar AdMob e seus IDs.
+- [x] Salvar URL de política existente como rascunho; revisar lacunas antes da declaração final.
+- [x] Declarar presença de anúncios (Sim); preservar AdMob e seus IDs.
 - [ ] Conferir variáveis EAS da build alvo, adaptadores e SDKs efetivamente incluídos.
 - [ ] Preencher Data Safety conforme a tabela, resolvendo os campos condicionais.
 - [ ] Testar cadastro, login, perfil e exclusão no backend exclusivo antes de afirmar disponibilidade.
@@ -111,8 +115,8 @@ O fluxo principal pode ser usado como convidado: abrir → Jogar → tocar no s�
 - [ ] Completar acesso ao app com convidado e instruções das funções autenticadas.
 - [ ] Classificação indicativa: responder a partir do conteúdo real; não presumir classificação final.
 - [ ] Público-alvo: política diz que não é dirigido a menores de 13; confirmar público comercial e configuração publicitária. Não declarar programa infantil por inferência.
-- [ ] Não declarar recursos financeiros/saúde/governo/notícias sem evidência; responder ao questionário real do console a partir do escopo de jogo.
-- [ ] Credenciais Expo/Apple, build de validação e testes em aparelho continuam pendentes.
+- [x] Salvos governo Não, recursos financeiros Não e saúde Não a partir do escopo do jogo. Notícias e demais questionários, se apresentados, dependem de conferência do console.
+- [ ] Acesso web Expo confirmado; conferir acesso do token usado no CI e certificado antes de nova build. Build iOS (4) existente não incorpora este PR; nova validação e testes em aparelho continuam pendentes.
 - [ ] Manter tudo em rascunho; nenhuma submissão/publicação foi autorizada.
 
 ## Referências oficiais consultadas
