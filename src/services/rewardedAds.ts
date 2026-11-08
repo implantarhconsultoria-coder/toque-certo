@@ -12,3 +12,11 @@ export function preloadRewardedAd(_placement?: string): void {}
 export async function showRewardedAd(_placement?: string): Promise<boolean> {
   return false;
 }
+
+export async function adPrivacyOptionsRequired(): Promise<boolean> {
+  return false;
+}
+
+export async function showAdPrivacyOptions(): Promise<boolean> {
+  return false;
+}

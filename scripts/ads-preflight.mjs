@@ -44,8 +44,17 @@ for (const name of ['ads-validation', 'ads-validation-ios']) {
   if (env.EXPO_PUBLIC_ADMOB_USE_TEST_IDS !== '1') errors.push(`Perfil ${name} deve usar anúncios de teste.`);
 }
 
+// Conformidade das lojas: privacidade acessível no app, UMP reabrível, sem login "em preparação".
+const start = readFileSync(new URL('../src/screens/StartScreen.tsx', import.meta.url), 'utf8');
+if (!start.includes('PRIVACY_POLICY_URL')) errors.push('Link da política de privacidade ausente em Ajustes.');
+if (!start.includes('showAdPrivacyOptions')) errors.push('Acesso às escolhas de privacidade do UMP ausente em Ajustes.');
+if (!native.includes('showPrivacyOptionsForm')) errors.push('showPrivacyOptionsForm do UMP não é chamado.');
+if (/EM PREPARAÇÃO/.test(start)) errors.push('Tela inicial mostra recurso "em preparação" (risco de rejeição Apple 2.1).');
+const workflow = readFileSync(new URL('../.github/workflows/eas-build.yml', import.meta.url), 'utf8');
+if (/eas-cli@latest init[^\n]*--force/.test(workflow)) errors.push('Workflow usa "eas init --force" (pode religar o projeto EAS).');
+
 if (errors.length) {
   console.error('Preflight de anúncios REPROVADO:\n- ' + errors.join('\n- '));
   process.exit(1);
 }
-console.log('Preflight de anúncios aprovado: IDs de produção preservados, sem teste em produção, SKAdNetwork e ATT configurados.');
+console.log('Preflight de anúncios aprovado: IDs de produção preservados, sem teste em produção, SKAdNetwork, ATT e privacidade no app configurados.');

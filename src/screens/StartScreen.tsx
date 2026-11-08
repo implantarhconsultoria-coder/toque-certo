@@ -10,7 +10,9 @@ import { useAuth } from '../auth/AuthContext';
 import { ArcadeBackdrop, GlassStat, NeonButton } from '../components/ArcadeUI';
 import { loadProgress, saveProgress } from '../services/progressStore';
 import AdDiagnosticsPanel from '../components/AdDiagnosticsPanel';
-import { preloadRewardedAd, rewardedAdsAvailable, showRewardedAd } from '../services/rewardedAds';
+import * as WebBrowser from 'expo-web-browser';
+import { adPrivacyOptionsRequired, preloadRewardedAd, rewardedAdsAvailable, showAdPrivacyOptions, showRewardedAd } from '../services/rewardedAds';
+import { PRIVACY_POLICY_URL } from '../utils/links';
 import { canClaimDaily, claimDaily, dailyReward, EMPTY_PROGRESS, levelInfo, parseChallenge, Progress } from '../utils/progression';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Start'>;
@@ -36,6 +38,31 @@ export default function StartScreen({ navigation }: Props) {
   const [dailyMsg, setDailyMsg] = useState('');
   const [dailyBusy, setDailyBusy] = useState(false);
   const [challenge, setChallenge] = useState<{ score: number; from: string | null } | null>(null);
+  const [privacyRequired, setPrivacyRequired] = useState(false);
+  const [privacyMsg, setPrivacyMsg] = useState('');
+
+  useEffect(() => {
+    if (panel !== 'settings') return;
+    setPrivacyMsg('');
+    adPrivacyOptionsRequired().then(setPrivacyRequired).catch(() => setPrivacyRequired(false));
+  }, [panel]);
+
+  async function openPrivacyPolicy() {
+    try { await WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL); }
+    catch { Linking.openURL(PRIVACY_POLICY_URL).catch(() => {}); }
+  }
+
+  async function openAdPrivacyOptions() {
+    const ok = await showAdPrivacyOptions();
+    setPrivacyMsg(ok ? 'ESCOLHAS DE PRIVACIDADE ATUALIZADAS.' : 'NÃO FOI POSSÍVEL ABRIR AGORA. TENTE MAIS TARDE.');
+  }
+
+  // Sem o serviço de contas configurado, o perfil abre o painel local (convidado), sem tela de login desativada.
+  const openProfile = () => {
+    if (user) navigation.navigate('Profile');
+    else if (configured) navigation.navigate('Auth');
+    else setPanel('profile');
+  };
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -104,7 +131,7 @@ export default function StartScreen({ navigation }: Props) {
             <View style={styles.levelTrack}><LinearGradient colors={[colors.accentCyan, colors.accentPink]} style={[styles.levelProgress, { width: (Math.max(4, Math.round(level.current / level.needed * 100)) + '%') as '100%' }]} /></View>
             <Text style={styles.levelCaption}>NÍVEL {level.level} · {level.title} · 🪙 {progress.coins}</Text>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate(user ? 'Profile' : 'Auth')} accessibilityLabel="Abrir perfil ou entrar" style={styles.headerIcon}>
+          <TouchableOpacity onPress={openProfile} accessibilityLabel="Abrir perfil" style={styles.headerIcon}>
             <Text style={styles.headerGlyph}>◉</Text>
           </TouchableOpacity>
         </View>
@@ -140,9 +167,11 @@ export default function StartScreen({ navigation }: Props) {
 
         <View style={styles.actions}>
           <NeonButton label={challenge ? '⚔  ACEITAR DESAFIO' : '▶  JOGAR'} onPress={() => navigation.navigate('Game')} />
-          <TouchableOpacity onPress={() => navigation.navigate(user ? 'Profile' : 'Auth')} accessibilityRole="button" style={{ alignItems: 'center', paddingVertical: 9 }}>
-            <Text style={{ color: colors.accentCyan, fontSize: 11, letterSpacing: 1, fontWeight: '900' }}>{user ? '◉  MEU PERFIL' : configured ? '◉  ENTRAR / CRIAR CONTA' : '◉  CONTA ONLINE EM PREPARAÇÃO'}</Text>
-          </TouchableOpacity>
+          {(user || configured) && (
+            <TouchableOpacity onPress={openProfile} accessibilityRole="button" style={{ alignItems: 'center', paddingVertical: 9 }}>
+              <Text style={{ color: colors.accentCyan, fontSize: 11, letterSpacing: 1, fontWeight: '900' }}>{user ? '◉  MEU PERFIL' : '◉  ENTRAR / CRIAR CONTA (OPCIONAL)'}</Text>
+            </TouchableOpacity>
+          )}
           <View style={styles.secondaryActions}>
             <NeonButton label="✦  MISSÕES" kind="secondary" onPress={() => setPanel('missions')} />
             <NeonButton label="⚙  AJUSTES" kind="secondary" onPress={() => setPanel('settings')} />
@@ -184,6 +213,16 @@ export default function StartScreen({ navigation }: Props) {
                 </View>
                 <Text style={styles.settingHelp}>COMO JOGAR</Text>
                 <Text style={styles.settingText}>Toque no símbolo indicado. Acertos somam pontos; cada erro custa 1 segundo. A cada 5 acertos consecutivos, você ganha 1 ponto extra. A grade cresce conforme a pontuação.</Text>
+                <Text style={styles.settingHelp}>PRIVACIDADE</Text>
+                <TouchableOpacity onPress={() => void openPrivacyPolicy()} accessibilityRole="link" style={styles.privacyLink}>
+                  <Text style={styles.privacyLinkText}>POLÍTICA DE PRIVACIDADE  ›</Text>
+                </TouchableOpacity>
+                {privacyRequired && (
+                  <TouchableOpacity onPress={() => void openAdPrivacyOptions()} accessibilityRole="button" style={styles.privacyLink}>
+                    <Text style={styles.privacyLinkText}>ESCOLHAS DE PRIVACIDADE DOS ANÚNCIOS  ›</Text>
+                  </TouchableOpacity>
+                )}
+                {!!privacyMsg && <Text style={styles.settingText}>{privacyMsg}</Text>}
                 <AdDiagnosticsPanel />
               </>
             )}
@@ -191,7 +230,7 @@ export default function StartScreen({ navigation }: Props) {
               <>
                 <Text style={styles.profileIcon}>◉</Text>
                 <Text style={styles.profileTitle}>JOGADOR CONVIDADO</Text>
-                <Text style={styles.profileSub}>Seu recorde fica salvo neste aparelho. O ranking online e as contas serão liberados quando o serviço estiver pronto.</Text>
+                <Text style={styles.profileSub}>Você joga sem cadastro. Recorde, nível e moedas ficam salvos neste aparelho.</Text>
                 <View style={{ marginTop: 18 }}><GlassStat label="SEU MELHOR RESULTADO" value={String(best)} accent={colors.accentLime} /></View>
               </>
             )}
@@ -252,6 +291,8 @@ const styles = StyleSheet.create({
   settingLine: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   settingHelp: { color: colors.accentCyan, fontSize: 11, fontWeight: '900', letterSpacing: 2, marginTop: 27, marginBottom: 10 },
   settingText: { color: '#C7CAE4', fontSize: 13, lineHeight: 21 },
+  privacyLink: { paddingVertical: 10 },
+  privacyLinkText: { color: colors.accentCyan, fontSize: 12, fontWeight: '900', letterSpacing: 1 },
   profileIcon: { color: colors.accentCyan, fontSize: 50, textAlign: 'center' },
   profileTitle: { color: '#FFF', fontSize: 19, fontWeight: '900', textAlign: 'center', marginTop: 7 },
   profileSub: { color: '#BEC3DF', textAlign: 'center', fontSize: 13, lineHeight: 20, marginTop: 14 },

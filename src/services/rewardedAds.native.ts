@@ -129,6 +129,30 @@ function getController(): RewardedController {
   return controller;
 }
 
+/** O UMP exige um ponto de acesso às escolhas de privacidade quando aplicável (ex.: Europa). */
+export async function adPrivacyOptionsRequired(): Promise<boolean> {
+  if (!rewardedAdsAvailable()) return false;
+  try {
+    const info = await sdk().AdsConsent.getConsentInfo();
+    return info?.privacyOptionsRequirementStatus === 'REQUIRED';
+  } catch {
+    return false;
+  }
+}
+
+/** Reabre o formulário de privacidade do UMP. Descarta o anúncio pré-carregado com a escolha antiga. */
+export async function showAdPrivacyOptions(): Promise<boolean> {
+  if (!rewardedAdsAvailable()) return false;
+  try {
+    await sdk().AdsConsent.showPrivacyOptionsForm();
+    controller?.invalidate();
+    preloadRewardedAd('privacidade');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Inicia consentimento, SDK e o primeiro pré-carregamento (chamado ao abrir o app). */
 export function startAds(): void {
   if (!rewardedAdsAvailable()) return;

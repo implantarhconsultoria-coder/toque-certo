@@ -11,9 +11,9 @@ import { useAuth } from '../auth/AuthContext';
 import { loadProgress, saveProgress } from '../services/progressStore';
 import { preloadRewardedAd, rewardedAdsAvailable, showRewardedAd } from '../services/rewardedAds';
 import { applyGame, challengeLink, levelInfo, Progress } from '../utils/progression';
+import { PUBLIC_SITE_URL as publicUrl } from '../utils/links';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'GameOver'>;
-const publicUrl = 'https://toque-certo-pi.vercel.app';
 
 export default function GameOverScreen({ navigation, route }: Props) {
   const { score, bestCombo, isNewRecord } = route.params;

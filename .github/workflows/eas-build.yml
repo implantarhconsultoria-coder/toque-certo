@@ -1,7 +1,7 @@
 name: Toque Certo - Build EAS e envio às lojas (teste)
 
 # Manual. Compila no EAS e envia ao TestFlight (iOS) e/ou faixa interna do Google Play (Android).
-# Não publica para o público. Requer o secret EXPO_TOKEN (conta rodrigo_pulzr).
+# Não publica para o público. Requer o secret EXPO_TOKEN com acesso à conta Expo implanta-x-pro-jogos.
 on:
   workflow_dispatch:
     inputs:
@@ -48,8 +48,12 @@ jobs:
       - run: npm run preflight:ads
       - name: Conta Expo
         run: npx --yes eas-cli@latest whoami
-      - name: Ligar projeto EAS (cria se ainda não existir)
-        run: npx --yes eas-cli@latest init --non-interactive --force
+      - name: Conferir projeto EAS (sem recriar nem trocar de conta)
+        run: |
+          # O projectId do app.json é a fonte da verdade; "eas init --force" poderia religar o app a outro projeto.
+          INFO=$(npx --yes eas-cli@latest project:info)
+          echo "$INFO"
+          echo "$INFO" | grep -q "a7a30eae-0f98-4ca8-bee7-61ad009e8493" || { echo "::error::Projeto EAS diferente do esperado (@implanta-x-pro-jogos/toque-certo)."; exit 1; }
       - name: Build e envio
         run: |
           PROFILE_IOS=testflight
