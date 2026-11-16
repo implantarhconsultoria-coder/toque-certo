@@ -62,10 +62,12 @@ async function requestTrackingIfNeeded(): Promise<void> {
 }
 
 let initialized = false;
+let privacyEditing = false;
 let preparing: Promise<boolean> | null = null;
 
 /** Consentimento UMP → ATT → configuração → inicialização, uma vez por sessão. */
 function prepare(): Promise<boolean> {
+  if (privacyEditing) return Promise.resolve(false);
   if (initialized) return Promise.resolve(true);
   if (preparing) return preparing;
   preparing = (async () => {
@@ -151,5 +153,29 @@ export async function showRewardedAd(placement = 'desconhecido'): Promise<boolea
     reportFailure('inicializacao', error);
     // Sem SDK ou sem anúncio disponível: não bloquear o jogo e não dar recompensa.
     return false;
+  }
+}
+
+/** Permite rever as escolhas UMP e descarta anúncios carregados com a escolha anterior. */
+export async function showAdPrivacyOptions(): Promise<void> {
+  if (!rewardedAdsAvailable() || privacyEditing || controller?.status().presenting) return;
+  privacyEditing = true;
+  try {
+    // Evita concorrer com a solicitação inicial de consentimento.
+    if (preparing) await preparing.catch(() => false);
+    const ads = sdk();
+    const info = await ads.AdsConsent.getConsentInfo();
+    if (info.privacyOptionsRequirementStatus !== 'REQUIRED') {
+      Alert.alert('Privacidade dos anúncios', 'Não há opções adicionais exigidas para sua região neste momento.');
+      return;
+    }
+    controller?.invalidate();
+    initialized = false;
+    await ads.AdsConsent.showPrivacyOptionsForm();
+  } catch (error) {
+    reportFailure('privacidade', error);
+  } finally {
+    privacyEditing = false;
+    preloadRewardedAd('privacidade');
   }
 }

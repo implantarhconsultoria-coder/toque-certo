@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Switch, Linking, Platform } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Switch, Linking, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,7 +10,7 @@ import { useAuth } from '../auth/AuthContext';
 import { ArcadeBackdrop, GlassStat, NeonButton } from '../components/ArcadeUI';
 import { loadProgress, saveProgress } from '../services/progressStore';
 import AdDiagnosticsPanel from '../components/AdDiagnosticsPanel';
-import { preloadRewardedAd, rewardedAdsAvailable, showRewardedAd } from '../services/rewardedAds';
+import { preloadRewardedAd, rewardedAdsAvailable, showRewardedAd, showAdPrivacyOptions } from '../services/rewardedAds';
 import { canClaimDaily, claimDaily, dailyReward, EMPTY_PROGRESS, levelInfo, parseChallenge, Progress } from '../utils/progression';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Start'>;
@@ -184,6 +184,19 @@ export default function StartScreen({ navigation }: Props) {
                 </View>
                 <Text style={styles.settingHelp}>COMO JOGAR</Text>
                 <Text style={styles.settingText}>Toque no símbolo indicado. Acertos somam pontos; cada erro custa 1 segundo. A cada 5 acertos consecutivos, você ganha 1 ponto extra. A grade cresce conforme a pontuação.</Text>
+                <TouchableOpacity accessibilityRole="link" onPress={() => {
+                  void Linking.openURL('https://toque-certo-pi.vercel.app/privacidade.html').catch(() => {
+                    Alert.alert('Política de privacidade', 'Acesse toque-certo-pi.vercel.app/privacidade.html no navegador.');
+                  });
+                }} style={{ paddingTop: 14 }}>
+                  <Text style={styles.settingHelp}>POLÍTICA DE PRIVACIDADE</Text>
+                </TouchableOpacity>
+                {rewardedAdsAvailable() && (
+                  <TouchableOpacity onPress={() => { void showAdPrivacyOptions(); }} accessibilityRole="button" style={{ paddingVertical: 14 }}>
+                    <Text style={styles.settingHelp}>PRIVACIDADE DOS ANÚNCIOS</Text>
+                    <Text style={styles.missionDesc}>Rever suas escolhas de consentimento</Text>
+                  </TouchableOpacity>
+                )}
                 <AdDiagnosticsPanel />
               </>
             )}

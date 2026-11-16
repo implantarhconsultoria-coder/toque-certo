@@ -28,7 +28,13 @@ function setup(opts = {}) {
   let clock = 1_000;
   let id = 0;
   const ctrl = new RewardedController({
-    createAd: () => { const a = new FakeAd(); ads.push(a); return a; },
+    createAd: () => {
+      if (opts.createError) throw new Error('native unavailable');
+      const a = new FakeAd();
+      if (opts.loadError) a.load = () => { throw new Error('load failed'); };
+      if (opts.showSyncError) a.show = () => { throw new Error('show failed'); };
+      ads.push(a); return a;
+    },
     events: EV,
     prepare: opts.prepare ?? (async () => true),
     record: (kind, inst, extra = {}) => events.push({ kind, inst, ...extra }),
@@ -198,4 +204,34 @@ test('eventos repetidos do SDK não duplicam recompensa nem fechamento', async (
   assert.equal(await p, true);
   assert.equal(t.kinds().filter(k => k === 'reward').length, 1);
   assert.equal(t.kinds().filter(k => k === 'closed').length, 1);
+});
+
+for (const failure of ['createError', 'loadError']) {
+  test(`falha síncrona em ${failure} não lança e não recompensa`, async () => {
+    const t = setup({ [failure]: true });
+    assert.equal(await t.ctrl.show('bonus_diario'), false);
+    assert.equal(t.ctrl.status().presenting, false);
+    assert.ok(t.kinds().includes('load_failed'));
+    assert.ok(t.kinds().includes('show_unavailable'));
+    assert.ok(!t.kinds().includes('reward'));
+  });
+}
+
+test('falha síncrona ao exibir libera o controlador e não recompensa', async () => {
+  const t = setup({ showSyncError: true });
+  await t.ctrl.preload();
+  t.ads[0].emit(EV.LOADED);
+  assert.equal(await t.ctrl.show('a'), false);
+  assert.equal(t.ctrl.status().presenting, false);
+  assert.ok(t.kinds().includes('show_failed'));
+  assert.ok(!t.kinds().includes('reward'));
+});
+
+test('invalidar consentimento libera espera de anúncio em carga', async () => {
+  const t = setup();
+  const pending = t.ctrl.show('a');
+  await flush();
+  t.ctrl.invalidate();
+  assert.equal(await pending, false);
+  assert.ok(!t.kinds().includes('reward'));
 });

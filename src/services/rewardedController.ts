@@ -121,6 +121,7 @@ export class RewardedController {
     const s = this.slot;
     if (!s || s.state === 'showing') return;
     if (s.state === 'ready') this.d.record('expired', s.id, { errorCode: 'invalidated' });
+    this.flush(s, 'failed');
     this.dispose(s);
   }
 
@@ -142,7 +143,14 @@ export class RewardedController {
 
       this.dropIfExpired();
       if (!this.slot) this.startLoad(placement);
-      const slot = this.slot!;
+      const slot = this.slot;
+      if (!slot) {
+        const id = this.d.newId();
+        this.d.record('show_requested', id, { placement });
+        this.d.record('show_unavailable', id, { placement, errorCode: 'load_failed' });
+        this.d.onUserFacingFailure?.('carregamento');
+        return false;
+      }
       this.d.record('show_requested', slot.id, { placement });
 
       if (slot.state === 'loading') {
@@ -170,7 +178,8 @@ export class RewardedController {
       slot.state = 'showing';
       slot.placement = placement;
       slot.onFinish = earned => resolve(earned);
-      slot.ad.show().catch((error: unknown) => {
+      // Promise boundary also catches a synchronous native bridge failure.
+      Promise.resolve().then(() => slot.ad.show()).catch((error: unknown) => {
         if (slot.state !== 'showing') return;
         this.d.record('show_failed', slot.id, { placement, errorCode: errorCodeOf(error) });
         this.d.onUserFacingFailure?.('exibicao', error);

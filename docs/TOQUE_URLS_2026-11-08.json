@@ -1,0 +1,27 @@
+[
+  {
+    "url": "https://toque-certo-pi.vercel.app",
+    "status": 200,
+    "final_url": "https://toque-certo-pi.vercel.app",
+    "content_type": "text/html; charset=utf-8",
+    "sha256": "a10a32f2e073e48416d9808f0e175fb362a39c989beb2e431ea462463e89242d",
+    "checked_at": "2026-11-08T21:13:49.675530+00:00"
+  },
+  {
+    "url": "https://toque-certo-pi.vercel.app/privacidade.html",
+    "status": 200,
+    "final_url": "https://toque-certo-pi.vercel.app/privacidade.html",
+    "content_type": "text/html; charset=utf-8",
+    "sha256": "1559e9ecd1a6265a2f41bec74c241893fe827f9512dde694b89bc9498a083cf8",
+    "checked_at": "2026-11-08T21:13:55.468508+00:00"
+  },
+  {
+    "url": "https://toque-certo-pi.vercel.app/app-ads.txt",
+    "status": 200,
+    "final_url": "https://toque-certo-pi.vercel.app/app-ads.txt",
+    "content_type": "text/plain; charset=utf-8",
+    "sha256": "2f97f0d35b5b0fca1e5c2c98de575ff5c7a332f435caef24f016fdcb27a11886",
+    "checked_at": "2026-11-08T21:14:01.098965+00:00",
+    "text": "google.com, pub-9360827223542670, DIRECT, f08c47fec0942fa0\n"
+  }
+]

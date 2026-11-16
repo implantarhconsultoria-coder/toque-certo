@@ -1,22 +1,27 @@
 name: Toque Certo - Build EAS e envio às lojas (teste)
 
 # Manual. Compila no EAS e envia ao TestFlight (iOS) e/ou faixa interna do Google Play (Android).
-# Não publica para o público. Requer o secret EXPO_TOKEN (conta rodrigo_pulzr).
+# Não publica para o público. Requer o secret EXPO_TOKEN (com acesso ao projeto implanta-x-pro-jogos).
 on:
   workflow_dispatch:
     inputs:
       platform:
         description: 'ios, android ou all'
         required: true
+        type: choice
+        options: [all, ios, android]
         default: 'all'
       submit:
         description: 'Enviar às lojas após a build (true/false). Ignorado em validacao.'
         required: true
-        default: 'true'
+        type: boolean
+        default: false
       profile:
         description: 'loja (IDs reais) ou validacao (anúncios de TESTE + diagnóstico, nunca envia às lojas)'
         required: false
-        default: 'loja'
+        type: choice
+        options: [validacao, loja]
+        default: 'validacao'
 
 permissions:
   contents: read
@@ -48,23 +53,30 @@ jobs:
       - run: npm run preflight:ads
       - name: Conta Expo
         run: npx --yes eas-cli@latest whoami
-      - name: Ligar projeto EAS (cria se ainda não existir)
-        run: npx --yes eas-cli@latest init --non-interactive --force
+      - name: Validar acesso ao projeto EAS existente
+        run: npx --yes eas-cli@latest project:info
       - name: Build e envio
+        env:
+          INPUT_SUBMIT: ${{ inputs.submit }}
+          INPUT_PROFILE: ${{ inputs.profile }}
+          INPUT_PLATFORM: ${{ inputs.platform }}
         run: |
+          set -euo pipefail
+          case "$INPUT_PROFILE" in loja|validacao) ;; *) echo "::error::Perfil inválido"; exit 1 ;; esac
           PROFILE_IOS=testflight
           PROFILE_ANDROID=production
           SUBMIT=""
-          if [ "${{ github.event.inputs.submit }}" = "true" ]; then SUBMIT="--auto-submit"; fi
-          if [ "${{ github.event.inputs.profile }}" = "validacao" ]; then
+          if [ "$INPUT_SUBMIT" = "true" ]; then SUBMIT="--auto-submit"; fi
+          if [ "$INPUT_PROFILE" = "validacao" ]; then
             PROFILE_IOS=ads-validation-ios
             PROFILE_ANDROID=ads-validation
             SUBMIT=""
           fi
           echo "Perfis: iOS=$PROFILE_IOS Android=$PROFILE_ANDROID envio='${SUBMIT:-nenhum}'"
-          case "${{ github.event.inputs.platform }}" in
+          case "$INPUT_PLATFORM" in
             ios)     npx --yes eas-cli@latest build -p ios --profile $PROFILE_IOS --non-interactive --wait $SUBMIT ;;
             android) npx --yes eas-cli@latest build -p android --profile $PROFILE_ANDROID --non-interactive --wait $SUBMIT ;;
-            *)       npx --yes eas-cli@latest build -p android --profile $PROFILE_ANDROID --non-interactive --wait $SUBMIT
+            all)     npx --yes eas-cli@latest build -p android --profile $PROFILE_ANDROID --non-interactive --wait $SUBMIT
                      npx --yes eas-cli@latest build -p ios --profile $PROFILE_IOS --non-interactive --wait $SUBMIT ;;
+            *) echo '::error::Plataforma inválida'; exit 1 ;;
           esac
