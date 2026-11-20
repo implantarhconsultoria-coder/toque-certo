@@ -15,14 +15,20 @@
       "ios": {
         "simulator": false
       },
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_ADS_ENABLED": "false"
+      }
     },
     "production": {
       "distribution": "store",
       "android": {
         "buildType": "app-bundle"
       },
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_ADS_ENABLED": "false"
+      }
     },
     "ads-validation": {
       "distribution": "internal",
