@@ -7,6 +7,8 @@ import { RewardedController, type RecordExtras } from './rewardedController';
 import { newId, recordAdEvent, startAdTelemetryLifecycle } from './adTelemetry';
 
 export function rewardedAdsAvailable(): boolean {
+  // Temporary publisher-wide kill switch: no SDK initialization, requests or rewarded placements.
+  if (process.env.EXPO_PUBLIC_ADS_ENABLED === 'false') return false;
   return Platform.OS === 'ios' || Platform.OS === 'android';
 }
 
