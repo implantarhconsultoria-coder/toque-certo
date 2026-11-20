@@ -9,7 +9,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.implanta.toquecerto",
-      "buildNumber": "1",
+      "buildNumber": "5",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -17,7 +17,8 @@
     },
     "android": {
       "package": "com.implanta.toquecerto",
-      "icon": "./assets/icon.png"
+      "icon": "./assets/icon.png",
+      "versionCode": 5
     },
     "web": {
       "bundler": "metro"
