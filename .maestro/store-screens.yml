@@ -1,0 +1,10 @@
+appId: com.implanta.toquecerto
+---
+- launchApp:
+    clearState: true
+- assertVisible: "TOQUE CERTO"
+- takeScreenshot: store-home
+- tapOn:
+    text: ".*JOGAR.*"
+- assertVisible: "TOQUE NO SÍMBOLO"
+- takeScreenshot: store-game
