@@ -13,7 +13,7 @@ import { preloadRewardedAd, rewardedAdsAvailable, showRewardedAd } from '../serv
 import { applyGame, challengeLink, levelInfo, Progress } from '../utils/progression';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'GameOver'>;
-const publicUrl = 'https://toque-certo-pi.vercel.app';
+const publicUrl = 'https://implantarhconsultoria-coder.github.io/toque-certo';
 
 export default function GameOverScreen({ navigation, route }: Props) {
   const { score, bestCombo, isNewRecord } = route.params;
