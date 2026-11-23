@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, useWindowDimensions, AppState } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Pressable, Modal, useWindowDimensions, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,6 +22,7 @@ export default function GameScreen({ navigation }: Props) {
   const [timeLeft, setTimeLeft] = useState(30);
   const randomRef = useRef(createSeededRandom((Math.random() * 0x100000000) >>> 0));
   const [round, setRound] = useState<Round>(() => generateRound(0, randomRef.current));
+  const roundRef = useRef(round);
   const [flash, setFlash] = useState<'bonus' | 'wrong' | null>(null);
   const [paused, setPaused] = useState(false);
   const [effects, setEffects] = useState(true);
@@ -33,6 +34,7 @@ export default function GameScreen({ navigation }: Props) {
   const remainingMs = useRef(ROUND_DURATION_MS);
   const pausedRef = useRef(false);
   const scoreRef = useRef(0);
+  const comboRef = useRef(0);
   const bestComboRef = useRef(0);
   const finishedRef = useRef(false);
   const tapLock = useRef(false);
@@ -120,15 +122,19 @@ export default function GameScreen({ navigation }: Props) {
     }
     tapLock.current = true;
     setTimeout(() => { tapLock.current = false; }, 80);
-    const outcome = resolveTap(round, index, symbol, scoreRef.current, combo, bestComboRef.current);
+    const outcome = resolveTap(roundRef.current, index, symbol, scoreRef.current, comboRef.current, bestComboRef.current);
     if (outcome.correct) {
       scoreRef.current = outcome.score;
       bestComboRef.current = outcome.bestCombo;
       setScore(outcome.score);
+      comboRef.current = outcome.combo;
       setCombo(outcome.combo);
       if (outcome.bonus && effects) setFlash('bonus');
-      setRound(generateRound(outcome.score, randomRef.current));
+      const nextRound = generateRound(outcome.score, randomRef.current);
+      roundRef.current = nextRound;
+      setRound(nextRound);
     } else {
+      comboRef.current = 0;
       setCombo(0);
       deadline.current -= outcome.timePenaltyMs;
       setTimeLeft(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
@@ -197,14 +203,16 @@ export default function GameScreen({ navigation }: Props) {
 
         <View style={styles.grid}>
           {round.options.map((symbol, index) => (
-            <TouchableOpacity
+            <Pressable
               accessibilityRole="button"
               accessibilityLabel={'Símbolo ' + symbol + ', opção ' + (index + 1)}
-              key={symbol + index} activeOpacity={0.65}
-              onPress={() => onTap(symbol, index)}
-              style={[styles.tileOuter, { width: cellSize, height: cellSize }]}
+              key={symbol + index}
+              hitSlop={3}
+              onPressIn={() => onTap(symbol, index)}
+              style={({ pressed }) => [styles.tileOuter, { width: cellSize, height: cellSize, opacity: pressed ? 0.8 : 1 }]}
             >
               <LinearGradient
+                pointerEvents="none"
                 colors={[symbols[index % symbols.length], '#5940BA', '#7140D9']}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.tileRim}
               >
@@ -212,7 +220,7 @@ export default function GameScreen({ navigation }: Props) {
                   <Text style={[styles.tileSymbol, { fontSize: columns === 2 ? 45 : 33, color: symbols[index % symbols.length] }]}>{symbol}</Text>
                 </LinearGradient>
               </LinearGradient>
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </View>
 
