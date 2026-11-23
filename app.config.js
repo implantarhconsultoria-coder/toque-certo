@@ -1,6 +1,22 @@
+const { withAndroidManifest } = require('expo/config-plugins');
+
 const advertisingIdPermission = 'com.google.android.gms.permission.AD_ID';
+const portraitFeature = 'android.hardware.screen.portrait';
+
+function withOptionalPortraitFeature(config) {
+  return withAndroidManifest(config, config => {
+    const manifest = config.modResults.manifest;
+    const features = manifest['uses-feature'] ?? [];
+    manifest['uses-feature'] = [
+      ...features.filter(feature => feature.$['android:name'] !== portraitFeature),
+      { $: { 'android:name': portraitFeature, 'android:required': 'false' } },
+    ];
+    return config;
+  });
+}
 
 module.exports = ({ config }) => {
+  config = withOptionalPortraitFeature(config);
   if (process.env.EXPO_PUBLIC_ADS_ENABLED !== 'false') return config;
 
   return {
