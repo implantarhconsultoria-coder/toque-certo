@@ -1,0 +1,27 @@
+name: Capture Toque Certo gameplay
+on:
+  workflow_dispatch: {}
+jobs:
+  capture_gameplay:
+    runs_on: linux-medium
+    steps:
+      - uses: eas/checkout
+      - name: Install project and Chromium
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+      - name: Export and run the game
+        run: |
+          EXPO_PUBLIC_ADS_ENABLED=false npm run build:web
+          node scripts/capture-store-screens.mjs
+      - uses: eas/upload_artifact
+        with:
+          type: other
+          name: store-home
+          path: store-home.png
+      - uses: eas/upload_artifact
+        with:
+          type: other
+          name: store-game
+          path: store-game.png
