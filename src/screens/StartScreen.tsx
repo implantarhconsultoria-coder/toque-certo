@@ -185,7 +185,7 @@ export default function StartScreen({ navigation }: Props) {
                 <Text style={styles.settingHelp}>COMO JOGAR</Text>
                 <Text style={styles.settingText}>Toque no símbolo indicado. Acertos somam pontos; cada erro custa 1 segundo. A cada 5 acertos consecutivos, você ganha 1 ponto extra. A grade cresce conforme a pontuação.</Text>
                 <TouchableOpacity accessibilityRole="link" onPress={() => {
-                  void Linking.openURL('https://toque-certo-pi.vercel.app/privacidade.html').catch(() => {
+                  void Linking.openURL('https://implantarhconsultoria-coder.github.io/toque-certo/privacidade.html').catch(() => {
                     Alert.alert('Política de privacidade', 'Acesse toque-certo-pi.vercel.app/privacidade.html no navegador.');
                   });
                 }} style={{ paddingTop: 14 }}>
