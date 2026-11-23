@@ -53,14 +53,6 @@
         "EXPO_PUBLIC_ADMOB_USE_TEST_IDS": "1",
         "EXPO_PUBLIC_AD_DIAGNOSTICS": "1"
       }
-    },
-    "store-qa": {
-      "extends": "production",
-      "distribution": "internal",
-      "autoIncrement": false,
-      "android": {
-        "buildType": "apk"
-      }
     }
   },
   "submit": {
