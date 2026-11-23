@@ -51,3 +51,20 @@ test('erro preserva score e recorde de combo e aplica 1 segundo', () => {
 test('RNG inválido é rejeitado, sem corromper rodada', () => {
   assert.throws(() => generateRound(0, () => 1), /Random source/);
 });
+
+
+test('todo alvo exibido pode ser acertado em grades de 4, 6 e 9 símbolos', () => {
+  const random = createSeededRandom(20261123);
+  for (const score of [0, 9, 10, 24, 25, 50]) {
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const round = generateRound(score, random);
+      const displayedSymbol = round.options[round.targetIndex];
+      assert.equal(displayedSymbol, round.target);
+      const result = resolveTap(round, round.targetIndex, displayedSymbol, score, 0, 0);
+      assert.equal(result.correct, true);
+      assert.equal(result.score, score + 1);
+      assert.equal(result.combo, 1);
+      assert.equal(result.timePenaltyMs, 0);
+    }
+  }
+});
