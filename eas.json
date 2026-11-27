@@ -17,7 +17,8 @@
       },
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_ADS_ENABLED": "false"
+        "EXPO_PUBLIC_ADS_ENABLED": "false",
+        "EXPO_PUBLIC_AUTH_ENABLED": "false"
       }
     },
     "production": {

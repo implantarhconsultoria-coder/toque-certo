@@ -6,7 +6,8 @@ import * as WebBrowser from 'expo-web-browser';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
 const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
-export const authConfigured = Boolean(url && key && /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(url));
+const authEnabled = process.env.EXPO_PUBLIC_AUTH_ENABLED !== 'false';
+export const authConfigured = authEnabled && Boolean(url && key && /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(url));
 export const supabase: SupabaseClient | null = authConfigured
   ? createClient(url!, key!, {
       auth: { storage: AsyncStorage, autoRefreshToken: true, persistSession: true,
