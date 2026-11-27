@@ -89,6 +89,15 @@ export default function StartScreen({ navigation }: Props) {
     try { await AsyncStorage.setItem('toqueCerto.visualEffects', String(value)); } catch {}
   }
 
+  function openPlayerProfile() {
+    if (!configured) {
+      setPanel('profile');
+      return;
+    }
+
+    navigation.navigate(user ? 'Profile' : 'Auth');
+  }
+
   const completed = achievements.filter(item => best >= item.target).length;
   const level = levelInfo(progress.xp);
   return (
@@ -104,7 +113,7 @@ export default function StartScreen({ navigation }: Props) {
             <View style={styles.levelTrack}><LinearGradient colors={[colors.accentCyan, colors.accentPink]} style={[styles.levelProgress, { width: (Math.max(4, Math.round(level.current / level.needed * 100)) + '%') as '100%' }]} /></View>
             <Text style={styles.levelCaption}>NÍVEL {level.level} · {level.title} · 🪙 {progress.coins}</Text>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate(user ? 'Profile' : 'Auth')} accessibilityLabel="Abrir perfil ou entrar" style={styles.headerIcon}>
+          <TouchableOpacity onPress={openPlayerProfile} accessibilityRole="button" accessibilityLabel="Abrir perfil do jogador" style={styles.headerIcon}>
             <Text style={styles.headerGlyph}>◉</Text>
           </TouchableOpacity>
         </View>
@@ -140,8 +149,8 @@ export default function StartScreen({ navigation }: Props) {
 
         <View style={styles.actions}>
           <NeonButton label={challenge ? '⚔  ACEITAR DESAFIO' : '▶  JOGAR'} onPress={() => navigation.navigate('Game')} />
-          <TouchableOpacity onPress={() => navigation.navigate(user ? 'Profile' : 'Auth')} accessibilityRole="button" style={{ alignItems: 'center', paddingVertical: 9 }}>
-            <Text style={{ color: colors.accentCyan, fontSize: 11, letterSpacing: 1, fontWeight: '900' }}>{user ? '◉  MEU PERFIL' : configured ? '◉  ENTRAR / CRIAR CONTA' : '◉  CONTA ONLINE EM PREPARAÇÃO'}</Text>
+          <TouchableOpacity onPress={openPlayerProfile} accessibilityRole="button" style={{ alignItems: 'center', paddingVertical: 9 }}>
+            <Text style={{ color: colors.accentCyan, fontSize: 11, letterSpacing: 1, fontWeight: '900' }}>{configured ? (user ? '◉  MEU PERFIL' : '◉  ENTRAR / CRIAR CONTA') : '◉  PERFIL DE CONVIDADO'}</Text>
           </TouchableOpacity>
           <View style={styles.secondaryActions}>
             <NeonButton label="✦  MISSÕES" kind="secondary" onPress={() => setPanel('missions')} />
@@ -204,7 +213,7 @@ export default function StartScreen({ navigation }: Props) {
               <>
                 <Text style={styles.profileIcon}>◉</Text>
                 <Text style={styles.profileTitle}>JOGADOR CONVIDADO</Text>
-                <Text style={styles.profileSub}>Seu recorde fica salvo neste aparelho. O ranking online e as contas serão liberados quando o serviço estiver pronto.</Text>
+                <Text style={styles.profileSub}>Seu recorde e seu progresso ficam salvos neste aparelho.</Text>
                 <View style={{ marginTop: 18 }}><GlassStat label="SEU MELHOR RESULTADO" value={String(best)} accent={colors.accentLime} /></View>
               </>
             )}
